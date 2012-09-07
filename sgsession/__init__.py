@@ -1,2 +1,3 @@
-from .session import Session, Entity
+from .session import Session
+from .entity import Entity
 
