@@ -3,8 +3,7 @@ from unittest import TestCase as BaseTestCase
 
 import shotgun_api3_registry
 
-from sgfs import SGFS
-from sgfs.shotgun import Session, Entity
+from sgsession import Session, Entity
 
 from . import fixtures
 

@@ -1,4 +1,0 @@
-name_expr: sg_asset_type + '/' + code
-children:
-    Task:
-        config: /Task.yml

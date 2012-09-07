@@ -1,2 +1,0 @@
-name_expr: step['short_name']
-extra_fields: step.short_name
