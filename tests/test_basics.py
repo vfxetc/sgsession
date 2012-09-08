@@ -29,23 +29,3 @@ class TestBasics(TestCase):
         shot_set.add(dummy)
         self.assertEqual(len(shot_set), len(shots) + 1)
     
-    def test_backref(self):
-        seq = self.session.merge(fixtures.sequences[0])
-        proj = self.session.merge(fixtures.project)
-        
-        self.assert_(('Shot', 'sg_sequence') not in seq.backrefs)
-        self.assert_(('Shot', 'project') not in proj.backrefs)
-        self.assert_(('Sequence', 'project') not in proj.backrefs)
-        
-        shots = self.session.find('Shot', [('sg_sequence', 'is', seq)])
-        self.assert_(('Shot', 'sg_sequence') in seq.backrefs)
-        for shot in seq.backrefs[('Shot', 'sg_sequence')]:
-            self.assert_(shot['sg_sequence'] is seq)
-        
-        seq.project()
-        self.assertEqual(len(shots), len(proj.backrefs[('Shot', 'project')]))
-        for shot in proj.backrefs[('Shot', 'project')]:
-            self.assert_(shot['project'] is proj)
-        self.assertEqual(1, len(proj.backrefs[('Sequence', 'project')]))
-        for seq in proj.backrefs[('Sequence', 'project')]:
-            self.assert_(seq['project'] is proj)

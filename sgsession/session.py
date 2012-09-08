@@ -116,6 +116,13 @@ class Session(object):
         for type_, entities in by_type.iteritems():
             self._fetch(entities, fields, *args, **kwargs)
 
+    def fetch_backrefs(self, to_fetch, backref_type, field):
+        by_type = {}
+        for x in to_fetch:
+            by_type.setdefault(x['type'], set()).add(x)
+        for type_, entities in by_type.iteritems():
+            self.find(backref_type, [[field, 'is'] + [x.minimal for x in entities]])
+
     def fetch_core(self, to_fetch):
         by_type = {}
         for x in to_fetch:

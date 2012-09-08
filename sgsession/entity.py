@@ -24,6 +24,10 @@ class Entity(dict):
     def cache_key(self):
         return self._cache_key(self)
     
+    @property
+    def minimal(self):
+        return dict(type=self['type'], id=self['id'])
+    
     def __repr__(self):
         return '<Entity %s:%s at 0x%x>' % (self.get('type'), self.get('id'), id(self))
     
@@ -132,6 +136,9 @@ class Entity(dict):
     
     def fetch_heirarchy(self):
         self.session.fetch_heirarchy([self])
+    
+    def fetch_backrefs(self, type_, field):
+        self.session.fetch_backrefs([self], type_, field)
     
     def parent(self, fetch=True):
         
