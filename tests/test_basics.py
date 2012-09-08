@@ -31,12 +31,21 @@ class TestBasics(TestCase):
     
     def test_backref(self):
         seq = self.session.merge(fixtures.sequences[0])
-        self.session.find('Shot', [('sg_sequence', 'is', seq)])
+        proj = self.session.merge(fixtures.project)
+        
+        self.assert_(('Shot', 'sg_sequence') not in seq.backrefs)
+        self.assert_(('Shot', 'project') not in proj.backrefs)
+        self.assert_(('Sequence', 'project') not in proj.backrefs)
+        
+        shots = self.session.find('Shot', [('sg_sequence', 'is', seq)])
         self.assert_(('Shot', 'sg_sequence') in seq.backrefs)
         for shot in seq.backrefs[('Shot', 'sg_sequence')]:
             self.assert_(shot['sg_sequence'] is seq)
         
-        seq.pprint(backrefs=False)
-        print
-        seq.project().pprint(backrefs=5)
-        self.assert_(False)
+        seq.project()
+        self.assertEqual(len(shots), len(proj.backrefs[('Shot', 'project')]))
+        for shot in proj.backrefs[('Shot', 'project')]:
+            self.assert_(shot['project'] is proj)
+        self.assertEqual(1, len(proj.backrefs[('Sequence', 'project')]))
+        for seq in proj.backrefs[('Sequence', 'project')]:
+            self.assert_(seq['project'] is proj)
