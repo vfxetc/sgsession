@@ -1,4 +1,5 @@
 import itertools
+import sys
 
 
 class Entity(dict):
@@ -33,8 +34,14 @@ class Entity(dict):
             raise TypeError('entity must have type and id to be hashable')
         return hash((type_, id_))
     
-    def pprint(self, depth=0, visited=None):
+    def pprint(self, backrefs=None, depth=0, visited=None):
         print '%s:%s at 0x%x;' % (self.get('type'), self.get('id'), id(self)),
+        
+        # Did you know that bools are ints?
+        if isinstance(backrefs, bool):
+            backrefs = sys.maxint if backrefs else 0
+        elif backrefs is not None and not isinstance(backrefs, int):
+            backrefs = 0
         
         visited = visited or set()
         if id(self) in visited:
@@ -53,17 +60,38 @@ class Entity(dict):
                 continue
             if isinstance(v, Entity):
                 print '%s%s =' % ('\t' * depth, k),
-                v.pprint(depth, visited)
+                v.pprint(backrefs, depth, visited)
             else:
                 print '%s%s = %r' % ('\t' * depth, k, v)
+        
+        if backrefs is not None:
+            for (type_, field), entities in sorted(self.backrefs.iteritems()):
+                # Using their wierd filter syntax here.
+                print '%s$FROM$%s.%s:' % (
+                    '\t' * depth,
+                    type_,
+                    field,
+                ),
+                if backrefs > 0:
+                    print '['
+                    depth += 1
+                    for x in entities:
+                        print '%s-' % ('\t' * depth, ),
+                        x.pprint(backrefs - 1, depth, visited)
+                    depth -= 1
+                    print '\t' * depth + ']'
+                else:
+                    print ', '.join(str(x) for x in sorted(x['id'] for x in entities))
+        
         depth -= 1
         print '\t' * depth + '}'
+    
     
     def __setitem__(self, key, value):
         dict.__setitem__(self, key, self.session.merge(value))
     
     def setdefault(self, key, value):
-        dict.setdefault(self, key, self.session.merge(value))
+        return dict.setdefault(self, key, self.session.merge(value))
     
     def update(self, *args, **kwargs):
         for x in itertools.chain(args, [kwargs]):
@@ -121,13 +149,13 @@ class Entity(dict):
         return self.get(field)
     
     def project(self, fetch=True):
-        
+                
         # The most straightforward way.
         try:
             return self['project']
         except KeyError:
             pass
-        
+                
         # Pass up the parental chain looking for a project.
         project = None
         parent = self.parent(fetch=False)
@@ -136,12 +164,12 @@ class Entity(dict):
                 project = parent
             else:
                 project = parent.project()
-        
+                
         # If we were given one from the parent, assume it.
         if project:
             self['project'] = project
             return project
-        
+                
         if fetch:
             # Fetch it ourselves; this should happen to the uppermost in a
             # heirachy that is not a Project.
