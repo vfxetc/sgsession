@@ -110,7 +110,11 @@ class Entity(dict):
             m = re.match(r'^(\w+)\.([A-Z]\w+)\.(.*)$', k)
             if m:
                 field, type_, deep_field = m.groups()
-                src.setdefault(field, {})[deep_field] = v
+                if isinstance(src.setdefault(field, {}), dict):
+                    src[field].setdefault('type', type_)
+                    src[field][deep_field] = v
+                elif v is not None:
+                    raise ValueError('Setting deep value on non-dict')
                 # XXX: Is this dangerous?
                 del src[k]
         
