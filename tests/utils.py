@@ -4,8 +4,7 @@ from unittest import TestCase as BaseTestCase
 import shotgun_api3_registry
 
 from sgsession import Session, Entity
-
-from . import fixtures
+from sgsession import fixtures
 
 
 class TestCase(BaseTestCase):
