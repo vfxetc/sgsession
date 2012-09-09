@@ -55,3 +55,10 @@ class TestImportantFields(TestCase):
         self.assert_('code' in seq)
         self.assert_('project' in seq)
         self.assert_('name' in proj)
+    
+    def test_important_deep(self):
+        task = self.session.merge(fixtures.tasks[0])
+        task.pprint()
+        task.fetch_core()
+        task.pprint()
+        self.assert_('short_name' in task['step'])

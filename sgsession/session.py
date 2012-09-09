@@ -17,7 +17,7 @@ class Session(object):
         'Project': ['code', 'sg_code'],
         'Sequence': ['code'],
         'Shot': ['code', 'sg_sequence'],
-        'Task': ['step', 'entity'],
+        'Task': ['step', 'entity', 'step.Step.short_name'],
     }
     
     def __init__(self, shotgun=None):

@@ -1,5 +1,6 @@
 import itertools
 import sys
+import re
 
 
 class Entity(dict):
@@ -103,6 +104,16 @@ class Entity(dict):
     
     def _update(self, dst, src, depth):
         # print ">>> MERGE", depth, dst, '<-', src
+        
+        # Pre-process deep linked names.
+        for k, v in src.items():
+            m = re.match(r'^(\w+)\.([A-Z]\w+)\.(.*)$', k)
+            if m:
+                field, type_, deep_field = m.groups()
+                src.setdefault(field, {})[deep_field] = v
+                # XXX: Is this dangerous?
+                del src[k]
+        
         for k, v in src.iteritems():
             
             if isinstance(v, dict):

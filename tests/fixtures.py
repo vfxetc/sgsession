@@ -83,6 +83,8 @@ def setup_tasks():
     
     setup_sequences()
     
+    steps = sg.find('Step', [])
+    
     batch = []
     for shot in shots:
         for i in range(3):
@@ -93,6 +95,7 @@ def setup_tasks():
                     entity=shot,
                     project=project,
                     content=mini_uuid(),
+                    step=steps[i],
                 )
             ))
     for x in sg.batch(batch):
