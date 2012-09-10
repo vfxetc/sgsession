@@ -143,28 +143,56 @@ class Entity(dict):
     def copy(self):
         raise RuntimeError("cannot copy %s" % self.__class__.__name__)
     
-    def fetch(self, fields, *args, **kwargs):
-        is_single = isinstance(fields, basestring)
+    def get(self, fields, default=None):
+        """Get field value(s) if they exist, otherwise a default.
+        
+        :param fields: A ``str`` field name or collection of ``str`` field names.
+        :param default: Default value to return when field does not exist.
+        
+        If passed a single field name as a ``str``, return the coresponding value.
+        If passed field names as a list or tuple, return a tuple of coresponding values.
+        
+        """
+        if isinstance(fields, (tuple, list)):
+            return tuple(dict.get(self, x, default) for x in fields)
+        else:
+            return dict.get(self, fields, default)
+    
+    def fetch(self, fields, default=None, force=False):
+        """Get field value(s), automatically fetching them from the server.
+        
+        :param fields: A ``str`` field name or collection of ``str`` field names.
+        :param default: Default value to return when field does not exist.
+        :param bool force: Force an update from the server, otherwise only query
+            they server if fields have been requested that we do not already have.
+        
+        If passed a single field name as a ``str``, return the coresponding value.
+        If passed field names as a list or tuple, return a tuple of coresponding values.
+        
+        """
+        is_single = not isinstance(fields, (tuple, list))
         if is_single:
             fields = [fields]
-        self.session.fetch([self], fields, *args, **kwargs)
+        self.session.fetch([self], fields, force=force)
         if is_single:
-            return dict.get(self, fields[0])
+            return dict.get(self, fields[0], default)
         else:
-            return tuple(dict.get(self, x) for x in fields)
-    
+            return tuple(dict.get(self, x, default) for x in fields)
 
     def fetch_core(self):
+        """Assert that all "important" fields exist on this Entity."""
         self.session.fetch_core([self])
     
     def fetch_heirarchy(self):
+        """Fetch the full upward heirarchy (toward the Project) from the server."""
         self.session.fetch_heirarchy([self])
     
     def fetch_backrefs(self, type_, field):
+        """Fetch all backrefs to this Entity from the given type and field."""
         self.session.fetch_backrefs([self], type_, field)
     
     def parent(self, fetch=True):
-        
+        """Get the parent of this Entity, automatically fetching from the server."""
         try:
             field = self.session._parent_fields[self['type']]
         except KeyError:
@@ -179,7 +207,12 @@ class Entity(dict):
         return self.get(field)
     
     def project(self, fetch=True):
-                
+        """Get the project of this Entity, automatically fetching from the server.
+        
+        Depending on what part of the heirarchy is already loaded, many more
+        entities will have their Project fetched by this single call.
+        
+        """
         # The most straightforward way.
         try:
             return self['project']
@@ -205,44 +238,4 @@ class Entity(dict):
             # heirachy that is not a Project.
             self.fetch(['project'])
             return self.setdefault('project', None)
-        
-    
-    def fetch_to_project(self):
-        pass
-        
-        cache = {}
-        entities = copy.deepcopy(list(entities))
-        to_resolve = entities[:]
-        
-        while to_resolve:
-            entity = to_resolve.pop(0)
-            
-            cache_key = (entity['type'], entity['id'])
-            cache[cache_key] = entity
-            
-            # Figure out where to find parents.
-            parent_attr = utils.parent_fields.get(entity['type'])
-            
-            # Doesn't have a parent.
-            if not parent_attr:
-                continue
-
-            # It is already there.
-            if parent_attr in entity:
-                parent = entity[parent_attr]
-            
-            # Get the parent.
-            else:
-                parent = self.shotgun.find(entity['type'], [
-                    ('id', 'is', entity['id']),
-                ], (parent_attr, ))[0][parent_attr]
-            
-            parent_key = (parent['type'], parent['id'])
-            parent = cache.setdefault(parent_key, parent)
-            
-            # Mark it down, and prepare for next loop.
-            entity[parent_attr] = parent
-            to_resolve.append(parent)
-        
-        return entities
     
