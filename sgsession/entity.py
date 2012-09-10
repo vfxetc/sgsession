@@ -5,17 +5,6 @@ import re
 
 class Entity(dict):
     
-    @staticmethod
-    def _cache_key(data):
-        type_ = data.get('type')
-        id_ = data.get('id')
-        if type_ and id_:
-            return (type_, id_)
-        elif type_:
-            return ('New-%s' % type_, id(data))
-        else:
-            return ('Unknown', id_)
-    
     def __init__(self, type_, id_, session):
         dict.__init__(self, type=type_, id=id_)
         self.session = session
@@ -23,7 +12,16 @@ class Entity(dict):
     
     @property
     def cache_key(self):
-        return self._cache_key(self)
+        type_ = dict.get(self, 'type')
+        id_ = dict.get(self, 'id')
+        if type_ and id_:
+            return (type_, id_)
+        elif type_:
+            return ('Detached-%s' % type_, id(self))
+        elif id_:
+            return ('Unknown', id_)
+        else:
+            return ('Detached-Unknown', id(self))
     
     @property
     def minimal(self):
@@ -33,8 +31,8 @@ class Entity(dict):
         return '<Entity %s:%s at 0x%x>' % (self.get('type'), self.get('id'), id(self))
     
     def __hash__(self):
-        type_ = self.get('type')
-        id_ = self.get('id')
+        type_ = dict.get(self, 'type')
+        id_ = dict.get(self, 'id')
         if not (type_ and id_):
             raise TypeError('entity must have type and id to be hashable')
         return hash((type_, id_))
