@@ -143,9 +143,17 @@ class Entity(dict):
     def copy(self):
         raise RuntimeError("cannot copy %s" % self.__class__.__name__)
     
-    def fetch(self, *args, **kwargs):
-        self.session.fetch([self], *args, **kwargs)
+    def fetch(self, fields, *args, **kwargs):
+        is_single = isinstance(fields, basestring)
+        if is_single:
+            fields = [fields]
+        self.session.fetch([self], fields, *args, **kwargs)
+        if is_single:
+            return dict.get(self, fields[0])
+        else:
+            return tuple(dict.get(self, x) for x in fields)
     
+
     def fetch_core(self):
         self.session.fetch_core([self])
     

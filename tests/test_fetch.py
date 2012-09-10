@@ -13,18 +13,28 @@ class TestFetch(TestCase):
         cls.seq = sg.create('Sequence', dict(code=cls.__name__ + '.seq', project=project))
         cls.shot = sg.create('Shot', dict(code=cls.__name__ + '.shot', sg_sequence=cls.seq, project=project))
         
-    def test_fetch_scalar(self):
+    def test_fetch_scalars(self):
         shot = self.session.find_one('Shot', [
             ('code', 'is', self.shot['code']),
             ('project', 'is', {'type': 'Project', 'id': project['id']}),
         ])
         self.assert_('description' not in shot)
-        shot.fetch(['code', 'description', 'created_at', 'does_not_exist'])
+        
+        desc = shot.fetch('description')
+        code, time, dne = shot.fetch(['code', 'created_at', 'does_not_exist'])
+        
         self.assertEqual(shot['code'], self.shot['code'])
+        self.assertEqual(code, self.shot['code'])
+        
         self.assertEqual(shot['description'], None)
+        self.assertEqual(desc, None)
+        
         self.assert_(shot['created_at'])
+        self.assert_(time)
+        
         self.assert_('does_not_exist' not in shot)
-    
+        self.assert_(dne is None)
+        
     def test_fetch_entity(self):
         
         shot = self.session.find_one('Shot', [('id', 'is', self.shot['id'])])

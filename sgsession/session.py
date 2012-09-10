@@ -95,9 +95,6 @@ class Session(object):
             raise ValueError('can only fetch one type at once')
         type_ = types[0]
         
-        if isinstance(fields, basestring):
-            fields = [fields]
-            
         ids_ = set()
         for e in entities:
             if force or any(f not in e for f in fields):
