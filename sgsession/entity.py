@@ -27,6 +27,20 @@ class Entity(dict):
     def minimal(self):
         return dict(type=self['type'], id=self['id'])
     
+    def as_dict(self, visited=None):
+        if visited is None:
+            visited = set()
+        if self in visited:
+            return self.minimal
+        visited.add(self)
+        ret = {}
+        for k, v in self.iteritems():
+            if isinstance(v, Entity):
+                ret[k] = v.as_dict(visited)
+            else:
+                ret[k] = v
+        return ret
+    
     def __repr__(self):
         return '<Entity %s:%s at 0x%x>' % (self.get('type'), self.get('id'), id(self))
     
