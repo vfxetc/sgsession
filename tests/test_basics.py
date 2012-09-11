@@ -1,13 +1,11 @@
-from .utils import *
+from common import *
 
 
-def setUpModule():
-    fixtures.setup_tasks()
-    globals().update(fixtures.__dict__)
-    
-    
 class TestBasics(TestCase):
-
+    
+    def setUp(self):
+        self.session = Session(None)
+    
     def test_nonhashable(self):
         a = self.session.merge(a=1)
         self.assertRaises(TypeError, hash, a)
@@ -15,7 +13,9 @@ class TestBasics(TestCase):
         self.assert_(hash(b))
     
     def test_sets(self):
-        shots = list(self.session.merge(x) for x in fixtures.shots)
+        
+        shots = [{'type': 'Shot', 'id': i} for i in range(1, 5)]
+        shots = [self.session.merge(x) for x in shots]
         shot_set = set(shots)
         self.assertEqual(len(shot_set), len(shots))
         
