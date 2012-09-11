@@ -26,7 +26,7 @@ class TestFetch(TestCase):
         self.assertEqual(shot['code'], self.shot['code'])
         self.assertEqual(code, self.shot['code'])
         
-        self.assertEqual(shot['description'], None)
+        self.assertEqual(shot.get('description'), None)
         self.assertEqual(desc, None)
         
         self.assert_(shot['created_at'])

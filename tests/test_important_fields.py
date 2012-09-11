@@ -9,7 +9,7 @@ def setUpModule():
 class TestImportantFields(TestCase):
     
     def test_task_chain(self):
-        
+                
         task = self.session.merge(fixtures.tasks[0])
         shot = self.session.merge(fixtures.shots[0])
         seq = self.session.merge(fixtures.sequences[0])
@@ -33,6 +33,12 @@ class TestImportantFields(TestCase):
         
         task.fetch_core()
         
+        task.pprint()
+        shot.pprint()
+        seq.pprint()
+        proj.pprint()
+        print
+        
         self.assert_('entity' in task)
         self.assert_('project' in task)
         self.assert_('step' in task)
@@ -42,7 +48,7 @@ class TestImportantFields(TestCase):
         self.assert_('code' not in seq)
         self.assert_('project' not in seq)
         self.assert_('name' in proj) # <- Automatically by Shotgun.
-        
+                
         task.pprint()
         print
         

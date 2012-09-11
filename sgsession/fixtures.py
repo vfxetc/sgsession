@@ -5,7 +5,7 @@ import atexit
 import itertools
 
 import shotgun_api3_registry
-
+import sgmock
 
 sg = None
 project = {}
@@ -23,7 +23,10 @@ def mini_uuid():
 def setup_sg():
     global sg
     if not sg:
-        sg = shotgun_api3_registry.connect(name='sgfs.tests', server='testing')
+        sg = sgmock.Shotgun()
+        fix = sgmock.Fixture(sg)
+        fix.default_steps()
+        # sg = shotgun_api3_registry.connect(name='sgfs.tests', server='testing')
 
 
 def setup_project():
@@ -102,9 +105,14 @@ def setup_tasks():
         tasks.append(dict(type="Task", id=x['id']))
             
             
-    
+
+do_tear_down = True
+
 @atexit.register
 def tear_down():
+    
+    if not do_tear_down:
+        return
         
     if os.path.exists(root):
         call(['rm', '-rf', root])
