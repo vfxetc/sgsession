@@ -1,8 +1,8 @@
 # sgsession
 
-[![Test Status](https://secure.travis-ci.org/westernx/sgsession.png)](http://travis-ci.org/westernx/sgmock)
+[![Test Status](https://secure.travis-ci.org/westernx/sgsession.png)](http://travis-ci.org/westernx/sgsession)
 
-This Python package is a wrapper around Shotgun which provides a local data cache and some additional intelligence on top of bare entities.
+This Python package is a wrapper around the [Shotgun Python API](https://github.com/shotgunsoftware/python-api) which provides a local data cache and some additional intelligence on top of bare entities.
 
 This is **not** a drop-in replacement for the normal API. While any individual entity in isolation should behave in the same way as with the normal API, the entities are linked behind the scenes and so complex behaviour is likely to break.
 
