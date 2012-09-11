@@ -16,4 +16,6 @@ def mini_uuid():
 
 def timestamp():
     return datetime.datetime.now().strftime('%Y%m%d%H%M%S')
-    
+
+def minimal(entity):
+    return dict(type=entity['type'], id=entity['id'])

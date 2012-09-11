@@ -1,19 +1,31 @@
-from .utils import *
-
-
-def setUpModule():
-    fixtures.setup_tasks()
-    globals().update(fixtures.__dict__)
+from common import *
 
 
 class TestImportantFields(TestCase):
     
+    def setUp(self):
+        sg = Shotgun()
+        self.sg = self.fix = fix = Fixture(sg)
+        self.session = Session(self.sg)
+        
+        proj = fix.Project(mini_uuid())
+        seq = proj.Sequence('AA', project=proj)
+        shot = seq.Shot('AA_001', project=proj)
+        step = fix.find_or_create('Step', short_name='Anim')
+        task = shot.Task('Animate something', step=step, project=proj)
+        
+        self.proj = minimal(proj)
+        self.seq = minimal(seq)
+        self.shot = minimal(shot)
+        self.step = minimal(step)
+        self.task = minimal(task)
+        
     def test_task_chain(self):
                 
-        task = self.session.merge(fixtures.tasks[0])
-        shot = self.session.merge(fixtures.shots[0])
-        seq = self.session.merge(fixtures.sequences[0])
-        proj = self.session.merge(fixtures.project)
+        task = self.session.merge(self.task)
+        shot = self.session.merge(self.shot)
+        seq = self.session.merge(self.seq)
+        proj = self.session.merge(self.proj)
         
         self.assert_('entity' not in task)
         self.assert_('project' not in task)
@@ -63,7 +75,7 @@ class TestImportantFields(TestCase):
         self.assert_('name' in proj)
     
     def test_important_deep(self):
-        task = self.session.merge(fixtures.tasks[0])
+        task = self.session.merge(self.task)
         task.pprint()
         task.fetch_core()
         task.pprint()
