@@ -1,22 +1,25 @@
-from .utils import *
-
-
-def setUpModule():
-    fixtures.setup_tasks()
-    globals().update(fixtures.__dict__)
+from common import *
 
 
 class TestFetch(TestCase):
     
-    @classmethod
-    def setUpClass(cls):
-        cls.seq = sg.create('Sequence', dict(code=cls.__name__ + '.seq', project=project))
-        cls.shot = sg.create('Shot', dict(code=cls.__name__ + '.shot', sg_sequence=cls.seq, project=project))
+    def setUp(self):
+        
+        sg = Shotgun()
+        self.sg = self.fix = fix = Fixture(sg)
+        self.session = Session(self.sg)
+        
+        self.proj = sg.create('Project', dict(
+            name=mini_uuid(),
+            sg_description='Test project - ' + timestamp()
+        ))
+        self.seq = sg.create('Sequence', dict(code=self.__class__.__name__ + '_seq', project=self.proj))
+        self.shot = sg.create('Shot', dict(code=self.__class__.__name__ + '_shot', sg_sequence=self.seq, project=self.proj))
         
     def test_fetch_scalars(self):
         shot = self.session.find_one('Shot', [
             ('code', 'is', self.shot['code']),
-            ('project', 'is', {'type': 'Project', 'id': project['id']}),
+            ('project', 'is', {'type': 'Project', 'id': self.proj['id']}),
         ])
         self.assert_('description' not in shot)
         
@@ -46,7 +49,7 @@ class TestFetch(TestCase):
         self.assert_(shot['project']['sg_description'])
         
         project_entity = self.session.find_one('Project', [
-            ('id', 'is', project['id']),
+            ('id', 'is', self.proj['id']),
         ])
         self.assert_(project_entity is shot['project'])
     
@@ -54,15 +57,15 @@ class TestFetch(TestCase):
         
         shot = self.session.find_one('Shot', [
             ('code', 'is', self.shot['code']),
-            ('project', 'is', {'type': 'Project', 'id': project['id']}),
+            ('project', 'is', {'type': 'Project', 'id': self.proj['id']}),
         ])
                 
         seq = shot.parent()
-        self.assertEqual(seq['id'], self.seq['id'])
+        self.assertSameEntity(seq, self.seq)
         
         proj = seq.parent()
-        self.assertEqual(proj['id'], project['id'])
+        self.assertSameEntity(proj, self.proj)
         
         shot.fetch(['project'])
-        self.assert_(shot['project'] is proj)
+        self.assertIs(shot['project'], proj)
         
