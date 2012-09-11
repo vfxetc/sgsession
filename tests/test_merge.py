@@ -1,12 +1,10 @@
-from .utils import *
-
-
-def setUpModule():
-    fixtures.setup_tasks()
-    globals().update(fixtures.__dict__)
+from common import *
 
 
 class TestMerge(TestCase):
+    
+    def setUp(self):
+        self.session = Session(None)
 
     def test_setitem(self):
         a = self.session.merge(a=1)
