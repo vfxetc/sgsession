@@ -16,6 +16,9 @@ class TestExports(TestCase):
         self.seqs = [minimal(x) for x in seqs]
         self.shots = [minimal(x) for x in shots]
     
+    def tearDown(self):
+        self.fix.delete_all()
+    
     def test_minimal(self):
         
         shot = self.session.merge(self.shots[0])

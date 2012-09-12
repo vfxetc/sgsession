@@ -2,11 +2,16 @@ from pprint import pprint, pformat
 import datetime
 import os
 
-import shotgun_api3
-
-from sgmock import Shotgun, ShotgunError, Fault
 from sgmock import Fixture
 from sgmock import TestCase
+
+if 'USE_SHOTGUN' in os.environ:
+    from shotgun_api3 import ShotgunError, Fault
+    import shotgun_api3_registry
+    def Shotgun():
+        return shotgun_api3_registry.connect('sgsession.tests', server='testing')
+else:
+    from sgmock import Shotgun, ShotgunError, Fault
 
 from sgsession import Session, Entity
 

@@ -10,14 +10,17 @@ class TestBackrefs(TestCase):
         proj = fix.Project(mini_uuid())
         seqs = [proj.Sequence(code, project=proj) for code in ('AA', 'BB')]
         shots = [seq.Shot('%s_%03d' % (seq['code'], i), project=proj) for seq in seqs for i in range(1, 3)]
-        steps = [fix.find_or_create('Step', name=name, short_name=name) for name in ('Anm', 'Comp', 'Model')]
-        tasks = [shot.Task(step['name'] + ' something', step=step, entity=shot, project=proj) for step in steps for shot in shots]
+        steps = [fix.find_or_create('Step', code=code, short_name=code) for code in ('Anm', 'Comp', 'Model')]
+        tasks = [shot.Task(step['code'] + ' something', step=step, entity=shot, project=proj) for step in steps for shot in shots]
         
         self.proj = minimal(proj)
         self.seqs = [minimal(x) for x in seqs]
         self.shots = [minimal(x) for x in shots]
         self.steps = [minimal(x) for x in steps]
         self.tasks = [minimal(x) for x in tasks]
+    
+    def tearDown(self):
+        self.fix.delete_all()
     
     def test_backref(self):
         seq = self.session.merge(self.seqs[0])

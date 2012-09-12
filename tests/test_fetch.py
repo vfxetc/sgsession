@@ -9,12 +9,15 @@ class TestFetch(TestCase):
         self.sg = self.fix = fix = Fixture(sg)
         self.session = Session(self.sg)
         
-        self.proj = sg.create('Project', dict(
+        self.proj = fix.create('Project', dict(
             name=mini_uuid(),
             sg_description='Test project - ' + timestamp()
         ))
-        self.seq = sg.create('Sequence', dict(code=self.__class__.__name__ + '_seq', project=self.proj))
-        self.shot = sg.create('Shot', dict(code=self.__class__.__name__ + '_shot', sg_sequence=self.seq, project=self.proj))
+        self.seq = fix.create('Sequence', dict(code=self.__class__.__name__ + '_seq', project=self.proj))
+        self.shot = fix.create('Shot', dict(code=self.__class__.__name__ + '_shot', sg_sequence=self.seq, project=self.proj))
+    
+    def tearDown(self):
+        self.fix.delete_all()
         
     def test_fetch_scalars(self):
         shot = self.session.find_one('Shot', [

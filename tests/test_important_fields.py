@@ -19,6 +19,9 @@ class TestImportantFields(TestCase):
         self.shot = minimal(shot)
         self.step = minimal(step)
         self.task = minimal(task)
+    
+    def tearDown(self):
+        self.fix.delete_all()
         
     def test_task_chain(self):
                 
