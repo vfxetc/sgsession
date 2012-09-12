@@ -5,13 +5,14 @@ import os
 from sgmock import Fixture
 from sgmock import TestCase
 
-if 'USE_SHOTGUN' in os.environ:
+_shotgun_server = os.environ.get('SHOTGUN', 'mock')
+if _shotgun_server == 'mock':
+    from sgmock import Shotgun, ShotgunError, Fault
+else:
     from shotgun_api3 import ShotgunError, Fault
     import shotgun_api3_registry
     def Shotgun():
-        return shotgun_api3_registry.connect('sgsession.tests', server='testing')
-else:
-    from sgmock import Shotgun, ShotgunError, Fault
+        return shotgun_api3_registry.connect('sgsession.tests', server=_shotgun_server)
 
 from sgsession import Session, Entity
 
