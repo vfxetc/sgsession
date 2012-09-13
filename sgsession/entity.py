@@ -211,7 +211,7 @@ class Entity(dict):
     
     def fetch_heirarchy(self):
         """Fetch the full upward heirarchy (toward the Project) from the server."""
-        self.session.fetch_heirarchy([self])
+        return self.session.fetch_heirarchy([self])
     
     def fetch_backrefs(self, type_, field):
         """Fetch all backrefs to this Entity from the given type and field."""

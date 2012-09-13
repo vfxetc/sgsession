@@ -129,15 +129,18 @@ class Session(object):
             )
         
     def fetch_heirarchy(self, to_fetch):
-        """Populate the parents as far up as we can go."""
+        """Populate the parents as far up as we can go, and return all involved."""
         
+        all_nodes = set()
         to_resolve = set()
         while to_fetch or to_resolve:
 
             # Go as far up as we already have for the specified entities.
             for entity in to_fetch:
+                all_nodes.add(entity)
                 while entity.parent(fetch=False):
                     entity = entity.parent()
+                    all_nodes.add(entity)
                 if entity['type'] != 'Project':
                     to_resolve.add(entity)
             
@@ -149,6 +152,7 @@ class Session(object):
             # from the list to resolve.
             by_type = {}
             for x in to_resolve:
+                all_nodes.add(x)
                 by_type.setdefault(x['type'], set()).add(x)
             type_, to_fetch = max(by_type.iteritems(), key=lambda x: len(x[1]))
             to_resolve.difference_update(to_fetch)
@@ -157,6 +161,8 @@ class Session(object):
             ids = [x['id'] for x in to_fetch]
             parent_name = self._parent_fields[type_]
             self.find(type_, [['id', 'in'] + ids], [parent_name])
+        
+        return list(all_nodes)
     
 
     
