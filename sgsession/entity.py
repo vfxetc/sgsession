@@ -251,7 +251,10 @@ class Entity(dict):
         entities will have their Project fetched by this single call.
         
         """
-        # The most straightforward way.
+        
+        # The most straightforward ways.
+        if self['type'] == 'Project':
+            return self
         try:
             return self['project']
         except KeyError:
