@@ -30,7 +30,18 @@ class TestBackrefs(TestCase):
         self.assert_(('Shot', 'project') not in proj.backrefs)
         self.assert_(('Sequence', 'project') not in proj.backrefs)
         
+        proj.pprint(backrefs=True)
+        seq.pprint(backrefs=True)
+        print
+        
         shots = self.session.find('Shot', [('sg_sequence', 'is', seq)])
+        
+        proj.pprint(backrefs=True)
+        seq.pprint(backrefs=True)
+        for x in shots:
+            x.pprint(backrefs=True)
+        print
+        
         self.assert_(('Shot', 'sg_sequence') in seq.backrefs)
         for shot in seq.backrefs[('Shot', 'sg_sequence')]:
             self.assert_(shot['sg_sequence'] is seq)
