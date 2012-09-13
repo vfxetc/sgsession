@@ -34,7 +34,7 @@ class Entity(dict):
             return self.minimal
         visited.add(self)
         ret = {}
-        for k, v in self.iteritems():
+        for k, v in sorted(self.iteritems()):
             if isinstance(v, Entity):
                 ret[k] = v.as_dict(visited)
             else:
