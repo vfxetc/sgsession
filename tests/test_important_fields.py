@@ -57,9 +57,12 @@ class TestImportantFields(TestCase):
         self.assert_('entity' in task)
         self.assert_('project' in task)
         self.assert_('step' in task)
-        self.assert_('code' not in shot)
+        
+        # Important stuff in Shot is there too due to deep-link fetching!
+        self.assert_('code' in shot)
         self.assert_('sg_sequence' not in shot)
-        self.assert_('project' not in shot)
+        self.assert_('project' in shot)
+        
         self.assert_('code' not in seq)
         self.assert_('project' not in seq)
         self.assert_('name' in proj) # <- Automatically by Shotgun.

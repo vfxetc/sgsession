@@ -71,7 +71,7 @@ class TestBackrefs(TestCase):
             self.assert_(shot['project'] is proj)
         
         proj.fetch_backrefs('Sequence', 'project')
-            
+        
         self.assertEqual(len(seqs), len(proj.backrefs[('Sequence', 'project')]))
         for seq in proj.backrefs[('Sequence', 'project')]:
             self.assert_(seq['project'] is proj)

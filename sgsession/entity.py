@@ -123,8 +123,9 @@ class Entity(dict):
             if m:
                 field, type_, deep_field = m.groups()
                 if isinstance(src.setdefault(field, {}), dict):
-                    src[field].setdefault('type', type_)
-                    src[field][deep_field] = v
+                    # Ignore type mismatches and None fields.
+                    if src[field].setdefault('type', type_) == type_ and v is not None:
+                        src[field][deep_field] = v
                 elif v is not None:
                     raise ValueError('Setting deep value on non-dict')
                 # XXX: Is this dangerous?
@@ -154,7 +155,9 @@ class Entity(dict):
                 ):
                     if do_set:
                         # Establish backref.
-                        v.backrefs.setdefault((dst['type'], k), []).append(dst)
+                        backrefs = v.backrefs.setdefault((dst['type'], k), [])
+                        if dst not in backrefs:
+                            backrefs.append(dst)
                         # Set the attribute.
                         dst[k] = v
                 else:

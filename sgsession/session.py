@@ -1,3 +1,4 @@
+import itertools
 from .entity import Entity
 
 
@@ -11,13 +12,31 @@ class Session(object):
         'Task': 'entity',
     }
     
-    _important_fields_for_all = ['project', 'updated_at']
+    _important_fields_for_all = ['updated_at']
     _important_fields = {
-        'Asset': ['code', 'sg_asset_type'],
+        'Asset': ['project', 'code', 'sg_asset_type'],
         'Project': ['code', 'sg_code'], # We always get name without asking.
-        'Sequence': ['code'],
-        'Shot': ['code', 'sg_sequence'],
-        'Task': ['step', 'entity', 'step.Step.short_name'],
+        'Sequence': ['project', 'code'],
+        'Shot': ['project', 'code'],
+        'Step': ['code', 'short_name']
+    }
+    
+    _important_links = {
+        'Asset': {
+            'project': ['Project'],
+        },
+        'Sequence': {
+            'project': ['Project'],
+        },
+        'Shot': {
+            'project': ['Project'],
+            'sg_sequence': ['Sequence'],
+        },
+        'Task': {
+            'project': ['Project'],
+            'entity': ['Asset', 'Shot'],
+            'step': ['Step'],
+        }
     }
     
     def __init__(self, shotgun=None):
@@ -67,10 +86,27 @@ class Session(object):
     def find(self, type_, filters, fields=None, *args, **kwargs):
         
         fields = list(fields) if fields else ['id']
+        
+        # Add important fields for this type.
         fields.extend(self._important_fields_for_all)
         fields.extend(self._important_fields.get(type_, []))
         
-        return [self.merge(x, over=True) for x in self.shotgun.find(type_, filters, fields, *args, **kwargs)]
+        # Add parent.
+        parent_field = self._parent_fields.get(type_)
+        if parent_field:
+            fields.append(parent_field)
+        
+        # Add important deep-fields for requested type.
+        for local_field, link_types in self._important_links.get(type_, {}).iteritems():
+            fields.append(local_field)
+            for link_type in link_types:
+                remote_fields = self._important_fields.get(link_type, [])
+                for remote_field in itertools.chain(self._important_fields_for_all, remote_fields):
+                    fields.append('%s.%s.%s' % (local_field, link_type, remote_field))
+        
+        result = self.shotgun.find(type_, filters, list(set(fields)), *args, **kwargs)
+        return [self.merge(x, over=True) for x in result]
+        
     
     def find_one(self, entity_type, filters, fields=None, order=None, 
         filter_operator=None, retired_only=False):
