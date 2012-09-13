@@ -1,3 +1,4 @@
+from datetime import datetime
 import itertools
 import sys
 import re
@@ -117,8 +118,16 @@ class Entity(dict):
     def _update(self, dst, src, over=None, depth=0):
         # print ">>> MERGE", depth, dst, '<-', src
         
+        src = dict(src)
+        
+        # Convert datetimes to UTC
+        for k, v in src.iteritems():
+            if isinstance(v, datetime) and v.tzinfo is not None:
+                src[k] = datetime(*v.utctimetuple()[:6])
+        
         # Pre-process deep linked names.
         for k, v in src.items():
+            
             m = re.match(r'^(\w+)\.([A-Z]\w+)\.(.*)$', k)
             if m:
                 field, type_, deep_field = m.groups()
