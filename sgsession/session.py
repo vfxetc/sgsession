@@ -14,7 +14,7 @@ class Session(object):
     _important_fields_for_all = ['project', 'updated_at']
     _important_fields = {
         'Asset': ['code', 'sg_asset_type'],
-        'Project': ['code', 'sg_code'],
+        'Project': ['code', 'sg_code'], # We always get name without asking.
         'Sequence': ['code'],
         'Shot': ['code', 'sg_sequence'],
         'Task': ['step', 'entity', 'step.Step.short_name'],
@@ -27,12 +27,10 @@ class Session(object):
     def __getattr__(self, name):
         return getattr(self.shotgun, name)
     
-    def merge(self, *args, **kwargs):
+    def merge(self, data, override=None):
         
-        # Get our one argument.
-        if len(args) > 1 or args and kwargs:
-            raise ValueError('must provide one arg or kwargs, not both')
-        data = args[0] if args else kwargs
+        if isinstance(data, (list, tuple)):
+            return tuple(self.merge(x, override) for x in data)
                 
         # Non-dicts (including Entities) don't matter; just pass them through.
         if not isinstance(data, dict):

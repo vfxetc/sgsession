@@ -7,9 +7,9 @@ class TestBasics(TestCase):
         self.session = Session(None)
     
     def test_nonhashable(self):
-        a = self.session.merge(a=1)
+        a = self.session.merge(dict(a=1))
         self.assertRaises(TypeError, hash, a)
-        b = self.session.merge(type="Dummy", id=1)
+        b = self.session.merge(dict(type="Dummy", id=1))
         self.assert_(hash(b))
     
     def test_sets(self):
@@ -21,7 +21,7 @@ class TestBasics(TestCase):
         
         self.assert_(shots[0] in shot_set)
 
-        dummy = self.session.merge(type="Dummy", id=1)
+        dummy = self.session.merge(dict(type="Dummy", id=1))
         self.assert_(dummy not in shot_set)
         
         shot_set.add(shots[0])
