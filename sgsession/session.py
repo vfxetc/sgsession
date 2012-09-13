@@ -11,7 +11,7 @@ class Session(object):
         'Task': 'entity',
     }
     
-    _important_fields_for_all = ['project']
+    _important_fields_for_all = ['project', 'updated_at']
     _important_fields = {
         'Asset': ['code', 'sg_asset_type'],
         'Project': ['code', 'sg_code'],
