@@ -47,45 +47,49 @@ class TestMerge(TestCase):
         
         a = self.session.merge(dict(type='Dummy', id=1, v='a'))
         b = self.session.merge(dict(type='Dummy', id=1, v='b'), over=False)
-        self.assertIs(a, b)
         self.assertEqual(a['v'], 'a')
         
         a = self.session.merge(dict(type='Dummy', id=2, v='a', updated_at=1))
         b = self.session.merge(dict(type='Dummy', id=2, v='b', updated_at=2), over=False)
-        self.assertIs(a, b)
         self.assertEqual(a['v'], 'a')
         
         a = self.session.merge(dict(type='Dummy', id=3, v='a', updated_at=2))
         b = self.session.merge(dict(type='Dummy', id=3, v='b', updated_at=1), over=False)
-        self.assertIs(a, b)
         self.assertEqual(a['v'], 'a')
     
     def test_over_timed(self):
         
         a = self.session.merge(dict(type='Dummy', id=4, v='a', updated_at=1))
         b = self.session.merge(dict(type='Dummy', id=4, v='b', updated_at=2))
-        self.assertIs(a, b)
         self.assertEqual(a['v'], 'b')
         
         a = self.session.merge(dict(type='Dummy', id=5, v='a', updated_at=2))
         b = self.session.merge(dict(type='Dummy', id=5, v='b', updated_at=1))
-        self.assertIs(a, b)
         self.assertEqual(a['v'], 'a')
     
     def test_over_always(self):
     
         a = self.session.merge(dict(type='Dummy', id=6, v='a'))
         b = self.session.merge(dict(type='Dummy', id=6, v='b'), over=True)
-        self.assertIs(a, b)
         self.assertEqual(a['v'], 'b')
         
         a = self.session.merge(dict(type='Dummy', id=7, v='a', updated_at=1))
         b = self.session.merge(dict(type='Dummy', id=7, v='b', updated_at=2), over=True)
-        self.assertIs(a, b)
         self.assertEqual(a['v'], 'b')
         
         a = self.session.merge(dict(type='Dummy', id=8, v='a', updated_at=2))
         b = self.session.merge(dict(type='Dummy', id=8, v='b', updated_at=1), over=True)
-        self.assertIs(a, b)
         self.assertEqual(a['v'], 'b')
+    
+    def test_over_deep(self):
+        
+        a = self.session.merge(dict(type='Dummy', id=9, child=dict(type='DummyChild', id=1, v='a', updated_at=1)))
+        b = self.session.merge(dict(type='Dummy', id=9, child=dict(type='DummyChild', id=1, v='b', updated_at=2)))
+        self.assertEqual(a['child']['v'], 'b')
+        
+        a = self.session.merge(dict(type='Dummy', id=10, child=dict(type='DummyChild', id=2, v='a', updated_at=2)))
+        b = self.session.merge(dict(type='Dummy', id=10, child=dict(type='DummyChild', id=2, v='b', updated_at=1)))
+        self.assertEqual(a['child']['v'], 'a')
+        
+        
         
