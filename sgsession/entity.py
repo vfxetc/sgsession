@@ -112,9 +112,9 @@ class Entity(dict):
     
     def update(self, *args, **kwargs):
         for x in itertools.chain(args, [kwargs]):
-            self._update(self, x, 0)
+            self._update(self, x)
     
-    def _update(self, dst, src, depth):
+    def _update(self, dst, src, over=None, depth=0):
         # print ">>> MERGE", depth, dst, '<-', src
         
         # Pre-process deep linked names.
@@ -146,7 +146,7 @@ class Entity(dict):
                     # Set the attribute.
                     dst[k] = v
                 else:
-                    self._update(dst[k], v, depth + 1)
+                    self._update(dst[k], v, over, depth + 1)
             else:
                 dst[k] = v
         # print "<<< MERGE", depth, dst

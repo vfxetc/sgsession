@@ -27,10 +27,10 @@ class Session(object):
     def __getattr__(self, name):
         return getattr(self.shotgun, name)
     
-    def merge(self, data, override=None):
+    def merge(self, data, over=None):
         
         if isinstance(data, (list, tuple)):
-            return tuple(self.merge(x, override) for x in data)
+            return tuple(self.merge(x, over) for x in data)
                 
         # Non-dicts (including Entities) don't matter; just pass them through.
         if not isinstance(data, dict):
@@ -47,12 +47,12 @@ class Session(object):
         key = new.cache_key
         if key in self.cache:
             entity = self.cache[key]
-            entity.update(data)
+            entity._update(entity, data, over=over)
             return entity
         
         # Return the new one.
         self.cache[key] = new
-        new.update(data)
+        new._update(new, data, over=over)
         return new
     
     def create(self, type_, data):
