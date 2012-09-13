@@ -159,10 +159,11 @@ class Session(object):
         for x in to_fetch:
             by_type.setdefault(x['type'], set()).add(x)
         for type_, entities in by_type.iteritems():
-            self._fetch(entities,
-                self._important_fields_for_all +
-                self._important_fields.get(type_, [])
-            )
+            self._fetch(entities, itertools.chain(
+                self._important_fields_for_all,
+                self._important_fields.get(type_) or (),
+                self._important_links.get(type_, {}).iterkeys(),
+            ))
         
     def fetch_heirarchy(self, to_fetch):
         """Populate the parents as far up as we can go, and return all involved."""
