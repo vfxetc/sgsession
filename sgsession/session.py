@@ -70,7 +70,7 @@ class Session(object):
         fields.extend(self._important_fields_for_all)
         fields.extend(self._important_fields.get(type_, []))
         
-        return [self.merge(x) for x in self.shotgun.find(type_, filters, fields, *args, **kwargs)]
+        return [self.merge(x, over=True) for x in self.shotgun.find(type_, filters, fields, *args, **kwargs)]
     
     def find_one(self, entity_type, filters, fields=None, order=None, 
         filter_operator=None, retired_only=False):

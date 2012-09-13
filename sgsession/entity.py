@@ -130,6 +130,17 @@ class Entity(dict):
                 # XXX: Is this dangerous?
                 del src[k]
         
+        # Determine if new values override old ones.
+        if over:
+            do_set = True
+        elif over is None:
+            if 'updated_at' in dst and 'updated_at' in src:
+                do_set = src['updated_at'] > dst['updated_at']
+            else:
+                do_set = True
+        else:
+            do_set = False
+        
         for k, v in src.iteritems():
             
             if isinstance(v, dict):
@@ -141,14 +152,17 @@ class Entity(dict):
                     dst[k]['type'] != v['type'] or
                     dst[k]['id']   != v['id']
                 ):
-                    # Establish backref.
-                    v.backrefs.setdefault((dst['type'], k), []).append(dst)
-                    # Set the attribute.
-                    dst[k] = v
+                    if do_set:
+                        # Establish backref.
+                        v.backrefs.setdefault((dst['type'], k), []).append(dst)
+                        # Set the attribute.
+                        dst[k] = v
                 else:
                     self._update(dst[k], v, over, depth + 1)
-            else:
+            
+            elif do_set:
                 dst[k] = v
+            
         # print "<<< MERGE", depth, dst
         
     
