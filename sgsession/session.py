@@ -18,7 +18,8 @@ class Session(object):
         'Project': ['code', 'sg_code'], # We always get name without asking.
         'Sequence': ['project', 'code'],
         'Shot': ['project', 'code'],
-        'Step': ['code', 'short_name']
+        'Step': ['code', 'short_name', 'entity_type'],
+        'Task': ['step', 'project'],
     }
     
     _important_links = {
