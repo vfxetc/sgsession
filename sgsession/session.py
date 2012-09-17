@@ -15,7 +15,6 @@ class Session(object):
     _important_fields_for_all = ['updated_at']
     _important_fields = {
         'Asset': ['project', 'code', 'sg_asset_type'],
-        'Project': ['code', 'sg_code'], # We always get name without asking.
         'Sequence': ['project', 'code'],
         'Shot': ['project', 'code'],
         'Step': ['code', 'short_name', 'entity_type'],
