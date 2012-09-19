@@ -1,0 +1,2 @@
+- entity.refresh()
+- session.refresh(entities)

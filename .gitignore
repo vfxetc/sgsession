@@ -1,3 +1,7 @@
+# General cruft.
 ._*
 .DS_Store
 *.pyc
+
+# Build products.
+/docs/_build
