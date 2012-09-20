@@ -14,6 +14,8 @@ Contents
    :maxdepth: 2
    
    overview
+   session
+   entity
 
 ..
     Indices and tables

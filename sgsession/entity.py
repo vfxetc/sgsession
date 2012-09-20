@@ -5,6 +5,7 @@ import re
 
 
 class Entity(dict):
+    """DOCStrING"""
     
     def __init__(self, type_, id_, session):
         dict.__init__(self, type=type_, id=id_)
@@ -232,7 +233,7 @@ class Entity(dict):
     def parent(self, fetch=True):
         """Get the parent of this Entity, automatically fetching from the server."""
         try:
-            field = self.session._parent_fields[self['type']]
+            field = self.session.parent_fields[self['type']]
         except KeyError:
             raise KeyError('%s does not have a parent type defined' % self['type'])
         
