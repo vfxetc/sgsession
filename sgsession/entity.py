@@ -5,7 +5,14 @@ import re
 
 
 class Entity(dict):
-    """DOCStrING"""
+    
+    """A Shotgun entity.
+    
+    This behaves much like the :class:`dict` the Shotgun
+    API normally returns does, but understands the links bettween entities in
+    its associated session.
+    
+    """
     
     def __init__(self, type_, id_, session):
         dict.__init__(self, type=type_, id=id_)
@@ -27,18 +34,27 @@ class Entity(dict):
     
     @property
     def minimal(self):
+        """The minimal representation of this entity; a :class:`dict` with type and id."""
         return dict(type=self['type'], id=self['id'])
     
-    def as_dict(self, visited=None):
-        if visited is None:
-            visited = set()
+    def as_dict(self):
+        """Return the entity and all linked entities as pure :class:`dict`.
+        
+        The first reference to an entity will have all availible fields, and
+        any subsequent ones will be the minimal representation. This is the
+        ideal format for serialization and remerging into a session.
+        
+        """
+        return self._as_dict(set())
+    
+    def _as_dict(self, visited):
         if self in visited:
             return self.minimal
         visited.add(self)
         ret = {}
         for k, v in sorted(self.iteritems()):
             if isinstance(v, Entity):
-                ret[k] = v.as_dict(visited)
+                ret[k] = v._as_dict(visited)
             else:
                 ret[k] = v
         return ret
@@ -53,7 +69,11 @@ class Entity(dict):
             raise TypeError('entity must have type and id to be hashable')
         return hash((type_, id_))
     
-    def pprint(self, backrefs=None, depth=0, visited=None):
+    def pprint(self, backrefs=None, depth=0):
+        """Print this entity, all links and optional backrefs."""
+        self._pprint(backrefs, depth, set())
+    
+    def _pprint(self, backrefs, depth, visited):
         print '%s:%s at 0x%x;' % (self.get('type'), self.get('id'), id(self)),
         
         # Did you know that bools are ints?
@@ -62,7 +82,6 @@ class Entity(dict):
         elif backrefs is not None and not isinstance(backrefs, int):
             backrefs = 0
         
-        visited = visited or set()
         if id(self) in visited:
             print '...'
             return
@@ -79,7 +98,7 @@ class Entity(dict):
                 continue
             if isinstance(v, Entity):
                 print '%s%s =' % ('\t' * depth, k),
-                v.pprint(backrefs, depth, visited)
+                v._pprint(backrefs, depth, visited)
             else:
                 print '%s%s = %r' % ('\t' * depth, k, v)
         
@@ -96,7 +115,7 @@ class Entity(dict):
                     depth += 1
                     for x in entities:
                         print '%s-' % ('\t' * depth, ),
-                        x.pprint(backrefs - 1, depth, visited)
+                        x._pprint(backrefs - 1, depth, visited)
                     depth -= 1
                     print '\t' * depth + ']'
                 else:
@@ -208,6 +227,8 @@ class Entity(dict):
         If passed a single field name as a ``str``, return the coresponding value.
         If passed field names as a list or tuple, return a tuple of coresponding values.
         
+        See :meth:`sgsession.session.Session.fetch`.
+        
         """
         is_single = not isinstance(fields, (tuple, list))
         if is_single:
@@ -219,15 +240,27 @@ class Entity(dict):
             return tuple(dict.get(self, x, default) for x in fields)
 
     def fetch_core(self):
-        """Assert that all "important" fields exist on this Entity."""
+        """Assert that all "important" fields exist on this Entity.
+        
+        See :meth:`sgsession.session.Session.fetch_core`.
+        
+        """
         self.session.fetch_core([self])
     
     def fetch_heirarchy(self):
-        """Fetch the full upward heirarchy (toward the Project) from the server."""
+        """Fetch the full upward heirarchy (toward the Project) from the server.
+        
+        See :meth:`sgsession.session.Session.fetch_heirarchy`.
+        
+        """
         return self.session.fetch_heirarchy([self])
     
     def fetch_backrefs(self, type_, field):
-        """Fetch all backrefs to this Entity from the given type and field."""
+        """Fetch all backrefs to this Entity from the given type and field.
+        
+        See :meth:`sgsession.session.Session.fetch_backrefs`.
+        
+        """
         self.session.fetch_backrefs([self], type_, field)
     
     def parent(self, fetch=True):
