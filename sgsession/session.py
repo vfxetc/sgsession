@@ -33,6 +33,7 @@ class Session(object):
     #: Fields to always fetch: maps entity type to a list of fields.
     important_fields = {
         'Asset': ['project', 'code', 'sg_asset_type'],
+        'Project': ['name'],
         'Sequence': ['project', 'code'],
         'Shot': ['project', 'code'],
         'Step': ['code', 'short_name', 'entity_type'],
