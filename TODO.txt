@@ -1,2 +1,6 @@
 - entity.refresh()
 - session.refresh(entities)
+- entity.update()
+- entity.delete()
+- entity type remapping (mainly for custom entities)
+- field remapping (for differences between servers)
