@@ -25,6 +25,7 @@ class Session(object):
         'Sequence': 'project',
         'Shot': 'sg_sequence',
         'Task': 'entity',
+        'PublishEvent': 'sg_link',
     }
     
     #: Fields to always fetch.
