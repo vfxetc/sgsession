@@ -33,12 +33,13 @@ class Session(object):
     
     #: Fields to always fetch: maps entity type to a list of fields.
     important_fields = {
-        'Asset': ['project', 'code', 'sg_asset_type'],
+        'Asset': ['code', 'sg_asset_type'],
         'Project': ['name'],
-        'Sequence': ['project', 'code'],
-        'Shot': ['project', 'code'],
+        'Sequence': ['code'],
+        'Shot': ['code'],
         'Step': ['code', 'short_name', 'entity_type'],
-        'Task': ['step', 'project'],
+        'Task': ['step', 'content'],
+        'PublishEvent': ['code', 'sg_type', 'sg_version'],
     }
     
     #: Links to always fetch: maps entity type to a mapping of field names to
@@ -58,7 +59,11 @@ class Session(object):
             'project': ['Project'],
             'entity': ['Asset', 'Shot'],
             'step': ['Step'],
-        }
+        },
+        'PublishEvent': {
+            'project': ['Project'],
+            'sg_link': ['Task'],
+        },
     }
     
     def __init__(self, shotgun=None):
