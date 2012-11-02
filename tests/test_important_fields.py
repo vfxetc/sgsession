@@ -60,7 +60,7 @@ class TestImportantFields(TestCase):
         
         # Important stuff in Shot is there too due to deep-link fetching!
         self.assert_('code' in shot)
-        self.assert_('sg_sequence' not in shot)
+        self.assert_('sg_sequence' in shot)
         self.assert_('project' in shot)
         
         self.assert_('code' not in seq)
@@ -79,7 +79,7 @@ class TestImportantFields(TestCase):
         self.assert_('code' in seq)
         self.assert_('project' in seq)
         self.assert_('name' in proj)
-    
+        
     def test_important_deep(self):
         task = self.session.merge(self.task)
         task.pprint()

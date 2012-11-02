@@ -10,6 +10,7 @@ instance.
 """
 
 import itertools
+import time
 
 from .entity import Entity
 
@@ -167,10 +168,15 @@ class Session(object):
             fields.append(local_field)
             for link_type in link_types:
                 remote_fields = self.important_fields.get(link_type, [])
-                for remote_field in itertools.chain(self.important_fields_for_all, remote_fields):
+                remote_links = self.important_links.get(link_type, {})
+                for remote_field in itertools.chain(self.important_fields_for_all, remote_fields, remote_links.iterkeys()):
                     fields.append('%s.%s.%s' % (local_field, link_type, remote_field))
         
-        result = self.shotgun.find(type_, filters, list(set(fields)), *args, **kwargs)
+        fields = sorted(set(fields))
+        
+        start_time = time.time()
+        result = self.shotgun.find(type_, filters, fields, *args, **kwargs)
+        print '%.3fms' % ((time.time() - start_time) * 1000)
         return [self.merge(x, over=True) for x in result]
         
     
