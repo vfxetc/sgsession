@@ -176,7 +176,6 @@ class Session(object):
         
         start_time = time.time()
         result = self.shotgun.find(type_, filters, fields, *args, **kwargs)
-        print '%.3fms' % ((time.time() - start_time) * 1000)
         return [self.merge(x, over=True) for x in result]
         
     
