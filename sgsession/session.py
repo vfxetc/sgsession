@@ -27,6 +27,7 @@ class Session(object):
         'Shot': 'sg_sequence',
         'Task': 'entity',
         'PublishEvent': 'sg_link',
+        'Version': 'entity',
     }
     
     #: Fields to always fetch.
@@ -41,6 +42,7 @@ class Session(object):
         'Step': ['code', 'short_name', 'entity_type'],
         'Task': ['step', 'content'],
         'PublishEvent': ['code', 'sg_type', 'sg_version'],
+        'Version': ['code', 'sg_task'],
     }
     
     #: Links to always fetch: maps entity type to a mapping of field names to
