@@ -29,3 +29,11 @@ class TestBasics(TestCase):
         shot_set.add(dummy)
         self.assertEqual(len(shot_set), len(shots) + 1)
     
+    def test_deep_links(self):
+        
+        step = self.session.merge({'type': 'Step', 'code': 'Anm'})
+        task = self.session.merge({'type': 'Task', 'step': step})
+        self.assertEqual(task['step.Step.code'], 'Anm')
+        self.assertEqual(task.get('step.Step.code'), 'Anm')
+        self.assertTrue('step.Step.code' in task)
+    

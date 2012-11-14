@@ -124,6 +124,31 @@ class Entity(dict):
         depth -= 1
         print '\t' * depth + '}'
     
+    def __contains__(self, key):
+        try:
+            value = self[key]
+        except KeyError:
+            return False
+        else:
+            return True
+    
+    def __getitem__(self, key):
+        if not isinstance(key, basestring):
+            raise KeyError(key)
+        try:
+            src = self
+            remote = key
+            while True:
+                m = re.match(r'^(\w+)\.([A-Z]\w+)\.(.+)$', remote)
+                if not m:
+                    break
+                local, type_, remote = m.groups()
+                src = dict.__getitem__(src, local)
+                if dict.__getitem__(src, 'type') != type_:
+                    raise KeyError('') # Will get replaced in a moment...
+            return dict.__getitem__(src, remote)
+        except KeyError:
+            raise KeyError(key)
     
     def __setitem__(self, key, value):
         dict.__setitem__(self, key, self.session.merge(value))
@@ -201,6 +226,7 @@ class Entity(dict):
     def copy(self):
         raise RuntimeError("cannot copy %s" % self.__class__.__name__)
     
+    
     def get(self, fields, default=None):
         """Get field value(s) if they exist, otherwise a default.
         
@@ -212,9 +238,18 @@ class Entity(dict):
         
         """
         if isinstance(fields, (tuple, list)):
-            return tuple(dict.get(self, x, default) for x in fields)
-        else:
-            return dict.get(self, fields, default)
+            res = []
+            for f in fields:
+                try:
+                    res.append(self[f])
+                except KeyError:
+                    res.append(default)
+            return tuple(res)
+
+        try:
+            return self[fields]
+        except KeyError:
+            return default
     
     def fetch(self, fields, default=None, force=False):
         """Get field value(s), automatically fetching them from the server.
@@ -235,9 +270,9 @@ class Entity(dict):
             fields = [fields]
         self.session.fetch([self], fields, force=force)
         if is_single:
-            return dict.get(self, fields[0], default)
+            return self.get(fields[0], default)
         else:
-            return tuple(dict.get(self, x, default) for x in fields)
+            return tuple(self.get(x, default) for x in fields)
 
     def fetch_core(self):
         """Assert that all "important" fields exist on this Entity.
