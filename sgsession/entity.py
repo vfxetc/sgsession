@@ -37,6 +37,10 @@ class Entity(dict):
         """The minimal representation of this entity; a :class:`dict` with type and id."""
         return dict(type=self['type'], id=self['id'])
     
+    @property
+    def url(self):
+        return '%s/detail/%s/%s' % (self.session.base_url, self['type'], self['id'])
+    
     def as_dict(self):
         """Return the entity and all linked entities as pure :class:`dict`.
         
