@@ -136,7 +136,7 @@ class Session(object):
         `See the Shotgun docs for more. <https://github.com/shotgunsoftware/python-api/wiki/Reference%3A-Methods#wiki-update>`_
         
         """
-        return self.merge(self.shotgun.update(type_, id, data))
+        return self.merge(self.shotgun.update(type_, id, data), over=True)
 
     def batch(self, requests):
         """Perform a series of requests in a transaction.
@@ -144,7 +144,7 @@ class Session(object):
         `See the Shotgun docs for more. <https://github.com/shotgunsoftware/python-api/wiki/Reference%3A-Methods#wiki-batch>`_
         
         """
-        return [self.merge(x) if isinstance(x, dict) else x for x in self.shotgun.batch(requests)]
+        return [self.merge(x, over=True) if isinstance(x, dict) else x for x in self.shotgun.batch(requests)]
     
     def _add_default_fields(self, type_, fields):
         

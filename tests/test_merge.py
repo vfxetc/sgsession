@@ -90,6 +90,20 @@ class TestMerge(TestCase):
         a = self.session.merge(dict(type='Dummy', id=10, child=dict(type='DummyChild', id=2, v='a', updated_at=2)))
         b = self.session.merge(dict(type='Dummy', id=10, child=dict(type='DummyChild', id=2, v='b', updated_at=1)))
         self.assertEqual(a['child']['v'], 'a')
+
+
+class TestLiveUpdates(TestCase):
+    
+    def setUp(self):
+        self.shotgun = Shotgun()
+        self.session = Session(self.shotgun)
+    
+    def test_has_times(self):
+        e = self.session.create('Project', {'name': mini_uuid()})
+        self.assertIn('updated_at', e)
         
-        
-        
+    def test_updates_merge(self):
+        e = self.session.create('Project', {'name': mini_uuid()})
+        self.session.update('Project', e['id'], {'name': e['name'] + ' 2'})
+        self.assertEqual(e['name'][-2:], ' 2')
+
