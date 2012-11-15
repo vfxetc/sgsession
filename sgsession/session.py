@@ -117,7 +117,7 @@ class Session(object):
         new._update(new, data, over, created_at)
         return new
     
-    def create(self, type_, data):
+    def create(self, type_, data, return_fields=None):
         """Create an entity of the given type and data.
         
         :return: The new :class:`~sgsession.entity.Entity`.
@@ -125,7 +125,8 @@ class Session(object):
         `See the Shotgun docs for more. <https://github.com/shotgunsoftware/python-api/wiki/Reference%3A-Methods#wiki-create>`_
         
         """
-        return self.merge(self.shotgun.create(type_, data))
+        return_fields = self._add_default_fields(type_, return_fields)
+        return self.merge(self.shotgun.create(type_, data, return_fields))
 
     def update(self, type_, id, data):
         """Update the given entity with the given fields.
@@ -145,14 +146,7 @@ class Session(object):
         """
         return [self.merge(x) if isinstance(x, dict) else x for x in self.shotgun.batch(requests)]
     
-    def find(self, type_, filters, fields=None, *args, **kwargs):
-        """Find entities.
-        
-        :return: :class:`list` of found :class:`~sgsession.entity.Entity`.
-        
-        `See the Shotgun docs for more. <https://github.com/shotgunsoftware/python-api/wiki/Reference%3A-Methods#wiki-find>`_
-        
-        """
+    def _add_default_fields(self, type_, fields):
         
         fields = list(fields) if fields else ['id']
         
@@ -174,9 +168,18 @@ class Session(object):
                 for remote_field in itertools.chain(self.important_fields_for_all, remote_fields, remote_links.iterkeys()):
                     fields.append('%s.%s.%s' % (local_field, link_type, remote_field))
         
-        fields = sorted(set(fields))
+        return sorted(set(fields))
+    
+    def find(self, type_, filters, fields=None, *args, **kwargs):
+        """Find entities.
         
-        start_time = time.time()
+        :return: :class:`list` of found :class:`~sgsession.entity.Entity`.
+        
+        `See the Shotgun docs for more. <https://github.com/shotgunsoftware/python-api/wiki/Reference%3A-Methods#wiki-find>`_
+        
+        """
+        
+        fields = self._add_default_fields(type_, fields)
         result = self.shotgun.find(type_, filters, fields, *args, **kwargs)
         return [self.merge(x, over=True) for x in result]
         
