@@ -164,7 +164,7 @@ class Entity(dict):
         for x in itertools.chain(args, [kwargs]):
             self._update(self, x)
     
-    def _update(self, dst, src, over=None, depth=0):
+    def _update(self, dst, src, over=None, created_at=None, depth=0):
         # print ">>> MERGE", depth, dst, '<-', src
         
         src = dict(src)
@@ -193,8 +193,8 @@ class Entity(dict):
         if over:
             do_set = True
         elif over is None:
-            if 'updated_at' in dst and 'updated_at' in src:
-                do_set = src['updated_at'] > dst['updated_at']
+            if 'updated_at' in dst and ('updated_at' in src or created_at):
+                do_set = src.get('updated_at', created_at) > dst['updated_at']
             else:
                 do_set = True
         else:
@@ -219,7 +219,7 @@ class Entity(dict):
                         # Set the attribute.
                         dst[k] = v
                 else:
-                    self._update(dst[k], v, over, depth + 1)
+                    self._update(dst[k], v, over, created_at, depth + 1)
             
             elif do_set:
                 dst[k] = v

@@ -76,7 +76,7 @@ class Session(object):
     def __getattr__(self, name):
         return getattr(self.shotgun, name)
     
-    def merge(self, data, over=None):
+    def merge(self, data, over=None, created_at=None):
         """Import a raw entity into the session.
         
         :param dict data: The raw fields to convert into an :class:`~sgsession.entity.Entity`.
@@ -109,12 +109,12 @@ class Session(object):
         key = new.cache_key
         if key in self.cache:
             entity = self.cache[key]
-            entity._update(entity, data, over=over)
+            entity._update(entity, data, over, created_at)
             return entity
         
         # Return the new one.
         self.cache[key] = new
-        new._update(new, data, over=over)
+        new._update(new, data, over, created_at)
         return new
     
     def create(self, type_, data):
