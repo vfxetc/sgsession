@@ -180,6 +180,7 @@ class Session(object):
         """
         
         fields = self._add_default_fields(type_, fields)
+        filters = [tuple(x.minimal if isinstance(x, Entity) else x for x in filter_) for filter_ in filters]
         result = self.shotgun.find(type_, filters, fields, *args, **kwargs)
         return [self.merge(x, over=True) for x in result]
         
