@@ -125,6 +125,7 @@ class Session(object):
         `See the Shotgun docs for more. <https://github.com/shotgunsoftware/python-api/wiki/Reference%3A-Methods#wiki-create>`_
         
         """
+        data = self._minimize_entities(data)
         return_fields = self._add_default_fields(type_, return_fields)
         return self.merge(self.shotgun.create(type_, data, return_fields))
 
@@ -136,6 +137,7 @@ class Session(object):
         `See the Shotgun docs for more. <https://github.com/shotgunsoftware/python-api/wiki/Reference%3A-Methods#wiki-update>`_
         
         """
+        data = self._minimize_entities(data)
         return self.merge(self.shotgun.update(type_, id, data), over=True)
 
     def batch(self, requests):
@@ -170,6 +172,15 @@ class Session(object):
         
         return sorted(set(fields))
     
+    def _minimize_entities(self, data):
+        if isinstance(data, dict):
+            if 'type' in data and 'id' in data:
+                return dict(type=data['type'], id=data['id'])
+            return dict((k, self._minimize_entities(v)) for k, v in data.iteritems())
+        if isinstance(data, (list, tuple)):
+            return [self._minimize_entities(x) for x in data]
+        return data
+        
     def find(self, type_, filters, fields=None, *args, **kwargs):
         """Find entities.
         
@@ -180,19 +191,8 @@ class Session(object):
         """
         
         fields = self._add_default_fields(type_, fields)
-        
-        # Convert all entities into their minimal representation.
-        cleaned_filters = []
-        for old_filter in filters:
-            new_filter = []
-            for x in old_filter:
-                if isinstance(x, dict) and 'type' in x and 'id' in x:
-                    new_filter.append(dict(type=x['type'], id=x['id']))
-                else:
-                    new_filter.append(x)
-            cleaned_filters.append(new_filter)
-        
-        result = self.shotgun.find(type_, cleaned_filters, fields, *args, **kwargs)
+        filters = self._minimize_entities(filters)
+        result = self.shotgun.find(type_, filters, fields, *args, **kwargs)
         return [self.merge(x, over=True) for x in result]
         
     
