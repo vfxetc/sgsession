@@ -180,8 +180,19 @@ class Session(object):
         """
         
         fields = self._add_default_fields(type_, fields)
-        filters = [tuple(x.minimal if isinstance(x, Entity) else x for x in filter_) for filter_ in filters]
-        result = self.shotgun.find(type_, filters, fields, *args, **kwargs)
+        
+        # Convert all entities into their minimal representation.
+        cleaned_filters = []
+        for old_filter in filters:
+            new_filter = []
+            for x in old_filter:
+                if isinstance(x, dict) and 'type' in x and 'id' in x:
+                    new_filter.append(dict(type=x['type'], id=x['id']))
+                else:
+                    new_filter.append(x)
+            cleaned_filters.append(new_filter)
+        
+        result = self.shotgun.find(type_, cleaned_filters, fields, *args, **kwargs)
         return [self.merge(x, over=True) for x in result]
         
     
