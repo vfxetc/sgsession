@@ -9,6 +9,8 @@ instance.
 
 """
 
+from __future__ import with_statement
+
 import itertools
 import os
 import threading
