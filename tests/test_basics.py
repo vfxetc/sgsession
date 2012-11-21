@@ -31,8 +31,8 @@ class TestBasics(TestCase):
     
     def test_deep_links(self):
         
-        step = self.session.merge({'type': 'Step', 'code': 'Anm'})
-        task = self.session.merge({'type': 'Task', 'step': step})
+        step = self.session.merge({'type': 'Step', 'id': 1, 'code': 'Anm'})
+        task = self.session.merge({'type': 'Task', 'id': 1, 'step': step})
         self.assertEqual(task['step.Step.code'], 'Anm')
         self.assertEqual(task.get('step.Step.code'), 'Anm')
         self.assertTrue('step.Step.code' in task)

@@ -191,39 +191,31 @@ class Entity(dict):
         
         # Determine if new values override old ones.
         if over:
-            do_set = True
+            do_override = True
         elif over is None:
             if 'updated_at' in dst and ('updated_at' in src or created_at):
-                do_set = src.get('updated_at', created_at) > dst['updated_at']
+                do_override = src.get('updated_at', created_at) > dst['updated_at']
             else:
-                do_set = True
+                do_override = True
         else:
-            do_set = False
+            do_override = False
         
         for k, v in src.iteritems():
             
-            if isinstance(v, dict):
-                v = self.session.merge(v)
-                # If the destination is not an entity, or the type or ID does
-                # not match (and so is a different entity) then replace it.
-                if (not isinstance(dst.get(k), Entity) or
-                    dst[k] is v or
-                    dst[k]['type'] != v['type'] or
-                    dst[k]['id']   != v['id']
-                ):
-                    if do_set:
-                        # Establish backref.
-                        backrefs = v.backrefs.setdefault((dst['type'], k), [])
-                        if dst not in backrefs:
-                            backrefs.append(dst)
-                        # Set the attribute.
-                        dst[k] = v
-                else:
-                    self._update(dst[k], v, over, created_at, depth + 1)
+            # If it is an entity, then it will get automatically pulled into
+            # place.
+            v = self.session.merge(v, over, created_at)
             
-            elif do_set:
+            if do_override or k not in dst:
+                
                 dst[k] = v
-            
+
+                # Establish a backref.
+                if isinstance(v, Entity):
+                    backrefs = v.backrefs.setdefault((dst['type'], k), [])
+                    if dst not in backrefs:
+                        backrefs.append(dst)
+        
         # print "<<< MERGE", depth, dst
         
     

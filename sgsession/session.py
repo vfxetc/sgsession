@@ -92,20 +92,27 @@ class Session(object):
         """
         
         if isinstance(data, (list, tuple)):
-            return tuple(self.merge(x, over) for x in data)
-                
-        # Non-dicts (including Entities) don't matter; just pass them through.
-        if not isinstance(data, dict):
-            return data
-            
+            # Assuming that the real type can take reconstruction...
+            return type(data)(self.merge(x, over, created_at) for x in data)
+        
         # Pass through entities if they are owned by us.
         if isinstance(data, Entity):
             if data.session is not self:
                 raise ValueError('entity not owned by this session')
             return data
         
+        if not isinstance(data, dict):
+            return data
+        
+        # Non-entity dicts have all their values merged.
+        try:
+            type_ = data['type']
+            id_ = data['id']
+        except KeyError:
+            return dict((k, self.merge(v, over, created_at)) for k, v in data.iteritems())
+
         # If it already exists, then merge this into the old one.
-        new = Entity(data.get('type'), data.get('id'), self)
+        new = Entity(data['type'], data['id'], self)
         key = new.cache_key
         if key in self.cache:
             entity = self.cache[key]
