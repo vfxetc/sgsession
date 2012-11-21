@@ -10,6 +10,8 @@ instance.
 """
 
 import itertools
+import os
+import threading
 import time
 
 from .entity import Entity
@@ -36,12 +38,13 @@ class Session(object):
     #: Fields to always fetch: maps entity type to a list of fields.
     important_fields = {
         'Asset': ['code', 'sg_asset_type'],
+        'HumanUser': ['firstname', 'lastname', 'email', 'login'],
         'Project': ['name'],
+        'PublishEvent': ['code', 'sg_type', 'sg_version'],
         'Sequence': ['code'],
         'Shot': ['code'],
         'Step': ['code', 'short_name', 'entity_type'],
         'Task': ['step', 'content'],
-        'PublishEvent': ['code', 'sg_type', 'sg_version'],
         'Version': ['code', 'sg_task'],
     }
     
@@ -77,7 +80,12 @@ class Session(object):
         return getattr(self.shotgun, name)
     
     def merge(self, data, over=None, created_at=None):
-        """Import a raw entity into the session.
+        """Import data containing raw entities into the session.
+        
+        This will effectively return a copy of any nested structure of lists,
+        tuples, and dicts, while converting any dicts which look like entities
+        into an :class:`.Entity`. The returned structure is a copy of the
+        original.
         
         :param dict data: The raw fields to convert into an :class:`~sgsession.entity.Entity`.
         :param bool over: Control for merge behaviour with existing data.
@@ -91,15 +99,16 @@ class Session(object):
         
         """
         
-        if isinstance(data, (list, tuple)):
-            # Assuming that the real type can take reconstruction...
-            return type(data)(self.merge(x, over, created_at) for x in data)
-        
         # Pass through entities if they are owned by us.
         if isinstance(data, Entity):
             if data.session is not self:
                 raise ValueError('entity not owned by this session')
             return data
+        
+        # Contents of lists and tuples should get merged.
+        if isinstance(data, (list, tuple)):
+            # Assuming that the real type can take reconstruction...
+            return type(data)(self.merge(x, over, created_at) for x in data)
         
         if not isinstance(data, dict):
             return data
@@ -359,6 +368,37 @@ class Session(object):
         
         return list(all_nodes)
     
+    _guessed_user_lock = threading.Lock()
+    
+    def guess_user(self, filter=('email', 'starts_with', '{login}@'), fields=(), fetch=True):
+        """Guess Shotgun user from current login name.
+    
+        Looks for a user with an email that has the login name as the account.
+    
+        :returns: ``dict`` of ``HumanUser``, or ``None``.
+    
+        """
+        with self._guessed_user_lock:
+            
+            if not hasattr(self, '_guessed_user'):
+                
+                if not fetch:
+                    return
+                
+                login = os.getlogin()
+                filter_ = tuple(x.format(login=login) for x in filter)
+                Session._guessed_user = self.find_one('HumanUser', [filter_], fields).as_dict()
+            
+            user = self._guessed_user
+            if user is None:
+                return
+            
+            entity = self.merge(user)
+            if fields:
+                entity.fetch(fields) # Not forced!
+            
+            return entity
+        
 
     
 
