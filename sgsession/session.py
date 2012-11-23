@@ -374,8 +374,9 @@ class Session(object):
     
     def guess_user(self, filter=('email', 'starts_with', '{login}@'), fields=(), fetch=True):
         """Guess Shotgun user from current login name.
-    
-        Looks for a user with an email that has the login name as the account.
+        
+        Looks for $SHOTGUN_USER_ID in your environment, then a user with an
+        email that has the login name as the account.
     
         :returns: ``dict`` of ``HumanUser``, or ``None``.
     
@@ -383,6 +384,15 @@ class Session(object):
         with self._guessed_user_lock:
             
             if not hasattr(self, '_guessed_user'):
+                
+                # Pull it out of the environment.
+                id_ = os.environ.get('SHOTGUN_USER_ID')
+                if id_:
+                    user = self.merge({'type': 'HumanUser', 'id': int(id_)})
+                    if fields:
+                        user.fetch(fields)
+                    Session._guessed_user = user.as_dict()
+                    return
                 
                 if not fetch:
                     return
