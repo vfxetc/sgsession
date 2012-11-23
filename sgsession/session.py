@@ -23,7 +23,7 @@ class Session(object):
     
     """Constructor; give it a Shotgun instance."""
     
-    #: Mapping of entity types to the type of their "parent".
+    #: Mapping of entity types to the field where their "parent" lives.
     parent_fields = {
         'Asset': 'project',
         'Project': None,
@@ -34,7 +34,7 @@ class Session(object):
         'Version': 'entity',
     }
     
-    #: Fields to always fetch.
+    #: Fields to always fetch for every entity.
     important_fields_for_all = ['updated_at']
     
     #: Fields to always fetch: maps entity type to a list of fields.
@@ -389,7 +389,9 @@ class Session(object):
                 
                 login = os.getlogin()
                 filter_ = tuple(x.format(login=login) for x in filter)
-                Session._guessed_user = self.find_one('HumanUser', [filter_], fields).as_dict()
+                Session._guessed_user = self.find_one('HumanUser', [filter_], fields)
+                if Session._guessed_user is not None:
+                    Session._guessed_user = Session._guessed_user.as_dict()
             
             user = self._guessed_user
             if user is None:
