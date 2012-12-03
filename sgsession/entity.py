@@ -128,6 +128,13 @@ class Entity(dict):
         depth -= 1
         print '\t' * depth + '}'
     
+    def exists(self):
+        """Determine if this entity still exists (non-retired) on the server."""
+        if self.get('id') is None or self.get('type') is None:
+            return False
+        found = self.session.find_one(self['type'], [('id', 'is', self['id'])])
+        return found is not None
+
     def __contains__(self, key):
         try:
             value = self[key]
