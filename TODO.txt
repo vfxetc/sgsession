@@ -1,6 +1,38 @@
+
+- mutable collections: BoundList and BountDict
+    - attach to an Entity and merge all new data into the session
+    - allow native tuples, but merge everything in them
+    - in the future they can mark an entity as updated so that session.commit()
+      can update everything in a batch
+    	- session.create(*, **, deferred=True) will be created during a
+    	  commit
+
+- fetch should complain when the entity doesn't exist, or mark the entity as
+  retired. Perhaps it is best to fail quickly and raise EntityIDError
+
 - entity.refresh()
 - session.refresh(entities)
-- entity.update()
+
+- entity.commit(), an Entity-level update
+
 - entity.delete()
+
 - entity type remapping (mainly for custom entities)
+    e.g. Publish -> PublishEvent
+    or   NewType -> CustomeEntity8
+
 - field remapping (for differences between servers)
+    e.g. sg_code -> code
+
+- automatic "sg_" prefix detection
+    - entity['path'] looks for 'path' and then 'sg_path', and would fetch for both
+    - entity['sg_path'] looks for 'sg_path', and then 'path', and would fetch for both
+    - entity['!path'] is definitely only 'path' (or some other syntax)
+    - the only collisions are on Shot, with the "Raw" version not having a
+      prefix. The "Raw" version isn't even exposed in "All Fields", so maybe
+      they are connected behind the scenes
+
+- only fetch the "important" fields/links that are not already satisfied, unless
+  explicitly requested to do so
+  
+  
