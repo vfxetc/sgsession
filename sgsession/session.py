@@ -14,7 +14,6 @@ from __future__ import with_statement
 import itertools
 import os
 import threading
-import time
 
 from .entity import Entity
 
@@ -116,10 +115,7 @@ class Session(object):
             return data
         
         # Non-entity dicts have all their values merged.
-        try:
-            type_ = data['type']
-            id_ = data['id']
-        except KeyError:
+        if not ('type' in data and 'id' in data):
             return dict((k, self.merge(v, over, created_at)) for k, v in data.iteritems())
 
         # If it already exists, then merge this into the old one.

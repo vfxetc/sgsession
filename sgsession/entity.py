@@ -137,7 +137,7 @@ class Entity(dict):
 
     def __contains__(self, key):
         try:
-            value = self[key]
+            self[key]
         except KeyError:
             return False
         else:
