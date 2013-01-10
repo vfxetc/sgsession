@@ -389,8 +389,6 @@ class Session(object):
                 id_ = os.environ.get('SHOTGUN_USER_ID')
                 if id_:
                     user = self.merge({'type': 'HumanUser', 'id': int(id_)})
-                    if fields:
-                        user.fetch(fields)
                     Session._guessed_user = user.as_dict()
             
             if not hasattr(self, '_guessed_user'):
@@ -400,11 +398,11 @@ class Session(object):
                 
                 login = os.getlogin()
                 filter_ = tuple(x.format(login=login) for x in filter)
-                Session._guessed_user = self.find_one('HumanUser', [filter_], fields)
-                if Session._guessed_user is not None:
-                    Session._guessed_user = Session._guessed_user.as_dict()
+                user = self.find_one('HumanUser', [filter_], fields)
+                if user is not None:
+                    Session._guessed_user = user.as_dict()
             
-            user = self._guessed_user
+            user = getattr(self, '_guessed_user', None)
             if user is None:
                 return
             
