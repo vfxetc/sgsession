@@ -392,7 +392,8 @@ class Session(object):
                     if fields:
                         user.fetch(fields)
                     Session._guessed_user = user.as_dict()
-                    return
+            
+            if not hasattr(self, '_guessed_user'):
                 
                 if not fetch:
                     return
