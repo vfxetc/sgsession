@@ -14,8 +14,13 @@ from __future__ import with_statement
 import itertools
 import os
 import threading
+import warnings
 
 from .entity import Entity
+
+
+class EntityNotFoundWarning(UserWarning):
+    pass
 
 
 class Session(object):
@@ -261,11 +266,15 @@ class Session(object):
             if force or any(f not in e for f in fields):
                 ids_.add(e['id'])
         if ids_:
-            self.find(
+            res = self.find(
                 type_,
                 [['id', 'in'] + list(ids_)],
                 fields,
             )
+            missing = ids_.difference(e['id'] for e in res)
+            for id_ in missing:
+                warnings.warn('%s %d was not found' % (type_, id_), EntityNotFoundWarning)
+
     
     def fetch(self, to_fetch, fields, force=False):
         """Fetch the named fields on the given entities.
