@@ -61,5 +61,17 @@ class TestRetired(TestCase):
 
         self.assertFalse(seq.exists())
 
+    def test_session_filter_exists(self):
+
+        seqs = [self.proj.Sequence('About_To_Retire_%d' % next(count), sg_status_list='rev') for i in range(3)]
+        seqs = [self.session.merge(x) for x in seqs]
+
+        deleted = seqs[1]
+        self.sg.delete('Sequence', deleted['id'])
+
+        should_exist = set(seqs).difference([deleted])
+        does_exist = self.session.filter_exists(seqs)
+
+        self.assertEqual(does_exist, should_exist)
 
 
