@@ -15,9 +15,15 @@ class Entity(dict):
     """
     
     def __init__(self, type_, id_, session):
+
         dict.__init__(self, type=type_, id=id_)
+
         self.session = session
         self.backrefs = {}
+
+        # Do we have confirmation that this entity exists and has not been
+        # retired on the server? None -> we have not checked yet.
+        self._exists = None
     
     @property
     def cache_key(self):
@@ -128,12 +134,26 @@ class Entity(dict):
         depth -= 1
         print '\t' * depth + '}'
     
-    def exists(self):
-        """Determine if this entity still exists (non-retired) on the server."""
+    def exists(self, check=True, force=False):
+        """Determine if this entity still exists (non-retired) on the server.
+
+        :param bool check: Check against the server if we don't already know.
+        :param bool force: Always recheck with the server, even if we already know.
+        :returns bool: True/False if it is known to exist or not, and None if
+            we do not know.
+
+        See :meth:`.Session.filter_exists` for the bulk version.
+
+        """
+
+        # Incomplete entities don't exist.
         if self.get('id') is None or self.get('type') is None:
             return False
-        found = self.session.find_one(self['type'], [('id', 'is', self['id'])])
-        return found is not None
+
+        # Defer the logic to the session, which will update _exists for us.
+        self.session.filter_exists([self], check, force)
+
+        return self._exists
 
     def __contains__(self, key):
         try:
@@ -265,7 +285,7 @@ class Entity(dict):
         If passed a single field name as a ``str``, return the coresponding value.
         If passed field names as a list or tuple, return a tuple of coresponding values.
         
-        See :meth:`sgsession.session.Session.fetch`.
+        See :meth:`.Session.fetch` for the bulk version.
         
         """
         is_single = not isinstance(fields, (tuple, list))
@@ -280,7 +300,7 @@ class Entity(dict):
     def fetch_core(self):
         """Assert that all "important" fields exist on this Entity.
         
-        See :meth:`sgsession.session.Session.fetch_core`.
+        See :meth:`.Session.fetch_core` for the bulk version.
         
         """
         self.session.fetch_core([self])
@@ -288,7 +308,7 @@ class Entity(dict):
     def fetch_heirarchy(self):
         """Fetch the full upward heirarchy (toward the Project) from the server.
         
-        See :meth:`sgsession.session.Session.fetch_heirarchy`.
+        See :meth:`.Session.fetch_heirarchy` for the bulk version.
         
         """
         return self.session.fetch_heirarchy([self])
@@ -296,7 +316,7 @@ class Entity(dict):
     def fetch_backrefs(self, type_, field):
         """Fetch all backrefs to this Entity from the given type and field.
         
-        See :meth:`sgsession.session.Session.fetch_backrefs`.
+        See :meth:`.Session.fetch_backrefs` for the bulk version.
         
         """
         self.session.fetch_backrefs([self], type_, field)

@@ -230,7 +230,7 @@ class Session(object):
             return results[0]
         return None
     
-    def delete(self, entity_type, entity_id):
+    def delete(self, entity, entity_id=None):
         """Delete one entity.
         
         .. warning:: This session will **not** forget about the deleted entity,
@@ -239,7 +239,16 @@ class Session(object):
         `See the Shotgun docs for more. <https://github.com/shotgunsoftware/python-api/wiki/Reference%3A-Methods#wiki-delete>`_
         
         """
-        return self.shotgun.delete(entity_type, entity_id)
+
+        if not isinstance(entity, Entity):
+            if not entity_id:
+                raise ValueError('must provide entity_id')
+            entity = self.merge({'type': entity, 'id': entity_id})
+
+        res = self.shotgun.delete(entity['type'], entity['id'])
+        entity._exists = False
+
+        return res
         
     def get(self, type_, id_, fetch=True):
         """Get one entity by type and ID.
@@ -272,10 +281,41 @@ class Session(object):
                 fields,
             )
             missing = ids_.difference(e['id'] for e in res)
+
+            # Update _exists on the entities.
+            for e in entities:
+                e._exists = e['id'] not in missing
+
             for id_ in missing:
                 warnings.warn('%s %d was not found' % (type_, id_), EntityNotFoundWarning)
 
-    
+    def filter_exists(self, entities, check=True, force=False):
+        """Return the subset of given entities which exist (non-retired).
+
+        :param list entities: An iterable of entities to check.
+        :param bool check: Should the server be consulted if we don't already know?
+        :param bool force: Should we always check the server?
+        :returns set: The entities which exist, or aren't sure about.
+
+        This will handle multiple entity-types in multiple requests.
+
+        """
+
+        if check:
+
+            by_type = {}
+            for x in entities:
+                by_type.setdefault(x['type'], set()).add(x)
+            for type_, sub_entities in by_type.iteritems():
+
+                if force or any(e._exists is None for e in sub_entities):
+                    found = self.find(type_, [['id', 'in'] + list(e['id'] for e in sub_entities)])
+                    found_ids = set(e['id'] for e in found)
+                    for e in sub_entities:
+                        e._exists = e['id'] in found_ids
+
+        return set(e for e in entities if (e._exists or e._exists is None))
+
     def fetch(self, to_fetch, fields, force=False):
         """Fetch the named fields on the given entities.
         

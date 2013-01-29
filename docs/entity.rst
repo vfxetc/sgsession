@@ -12,6 +12,7 @@ Entity Management
 .. autoattribute:: sgsession.entity.Entity.minimal
 .. automethod:: sgsession.entity.Entity.as_dict
 .. automethod:: sgsession.entity.Entity.pprint
+.. automethod:: sgsession.entity.Entity.exists
 
 
 Retrieving Data
