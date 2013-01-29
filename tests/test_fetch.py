@@ -71,4 +71,15 @@ class TestFetch(TestCase):
         
         shot.fetch(['project'])
         self.assertIs(shot['project'], proj)
+
+    def test_implicit_links(self):
+
+        shot = self.session.find_one('Shot', [('id', 'is', self.shot['id'])], ['sg_sequence.Sequence.sg_status_list'])
+
+        self.assertSameEntity(shot, self.shot)
+
+        # This is the critical one, as we only requested a field off of the
+        # sequence and not the whole thing.
+        self.assertSameEntity(shot['sg_sequence'], self.seq)
+
         

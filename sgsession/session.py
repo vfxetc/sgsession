@@ -169,27 +169,35 @@ class Session(object):
     
     def _add_default_fields(self, type_, fields):
         
-        fields = list(fields) if fields else ['id']
+        fields = set(fields or ['id'])
         
         # Add important fields for this type.
-        fields.extend(self.important_fields_for_all)
-        fields.extend(self.important_fields.get(type_, []))
+        fields.update(self.important_fields_for_all)
+        fields.update(self.important_fields.get(type_, []))
         
         # Add parent.
         parent_field = self.parent_fields.get(type_)
         if parent_field:
-            fields.append(parent_field)
+            fields.add(parent_field)
         
+        # Add implied owners of deep-fields.
+        implied = set()
+        for field in fields:
+            parts = field.split('.', 2)
+            if len(parts) > 1:
+                implied.add('.'.join(parts[:2]) + '.id')
+        fields.update(implied)
+
         # Add important deep-fields for requested type.
         for local_field, link_types in self.important_links.get(type_, {}).iteritems():
-            fields.append(local_field)
+            fields.add(local_field)
             for link_type in link_types:
                 remote_fields = self.important_fields.get(link_type, [])
                 remote_links = self.important_links.get(link_type, {})
                 for remote_field in itertools.chain(self.important_fields_for_all, remote_fields, remote_links.iterkeys()):
-                    fields.append('%s.%s.%s' % (local_field, link_type, remote_field))
+                    fields.add('%s.%s.%s' % (local_field, link_type, remote_field))
         
-        return sorted(set(fields))
+        return sorted(fields)
     
     def _minimize_entities(self, data):
         if isinstance(data, dict):
