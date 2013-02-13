@@ -55,18 +55,25 @@ class Entity(dict):
         ideal format for serialization and remerging into a session.
         
         """
-        return self._as_dict(set())
+        return self._as_dict(self, set())
     
-    def _as_dict(self, visited):
-        if self in visited:
-            return self.minimal
-        visited.add(self)
+    @classmethod
+    def _as_dict(cls, obj, visited):
+
+        if isinstance(obj, (tuple, list)):
+            return [cls._as_dict(x, visited) for x in obj]
+        if not isinstance(obj, dict):
+            return obj
+
+        if isinstance(obj, cls):
+            if obj in visited:
+                return obj.minimal
+            visited.add(obj)
+
         ret = {}
-        for k, v in sorted(self.iteritems()):
-            if isinstance(v, Entity):
-                ret[k] = v._as_dict(visited)
-            else:
-                ret[k] = v
+        for k, v in sorted(obj.iteritems()):
+            ret[k] = cls._as_dict(v, visited)
+
         return ret
     
     def __repr__(self):
@@ -321,7 +328,7 @@ class Entity(dict):
         """
         self.session.fetch_backrefs([self], type_, field)
     
-    def parent(self, fetch=True):
+    def parent(self, fetch=True, extra=None):
         """Get the parent of this Entity, automatically fetching from the server."""
         try:
             field = self.session.parent_fields[self['type']]
@@ -331,7 +338,9 @@ class Entity(dict):
         # Fetch it if it exists (e.g. this isn't a Project) and we are allowed
         # to fetch.
         if field and fetch:
-            self.fetch(field)
+            fields = list(extra or [])
+            fields.append(field)
+            self.fetch(fields)
             self.setdefault(field, None)
         
         return self.get(field)
