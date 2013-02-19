@@ -4,16 +4,16 @@ The standard Shotgun API uses a connection object that is not thread-safe.
 Therefore, usage in a multi-threaded environment is tricker than I believe it
 really should be. Ergo, this module was concieved.
 
-:class:`ThreadLocalShotgun` is a Shotgun connection manager that constructs a fresh
-Shotgun instance for every thread, and proxies attributes and methods to the
-thread-local instance. The actual Shotgun instance should never leak out of
+:class:`ShotgunPool` is a connection pool that creates fresh Shotgun instances
+when needed, and recycles old ones after use. It proxies attributes and
+methods to the managed instances. An actual Shotgun instance should never leak out of
 this object, so even passing around bound methods from this object should be safe.
 
 E.g.::
 
     >>> # Construct and wrap a Shotgun instance.
     >>> shotgun = Shotgun(...)
-    >>> shotgun = ThreadLocalShotgun(shotgun)
+    >>> shotgun = ShotgunPool(shotgun)
 
     >>> # Use it like normal, except thread-safe.
     >>> shotgun.find('Task', ...)
@@ -25,13 +25,14 @@ from __future__ import absolute_import
 from threading import local
 import functools
 import types
+import contextlib
 
 from shotgun_api3 import Shotgun
 
 
-class ThreadLocalShotgun(object):
+class ShotgunPool(object):
 
-    """Thread-local Shotgun mananger.
+    """Shotgun connection pool.
 
     :param prototype: Shotgun instance to use as a prototype, OR the
         ``base_url`` to be used to construct a prototype.
@@ -48,7 +49,7 @@ class ThreadLocalShotgun(object):
 
     def __init__(self, prototype, *args, **kwargs):
 
-        self._locals = local()
+        self._free_instances = []
 
         # Construct a prototype Shotgun if we aren't given one.
         if not isinstance(prototype, Shotgun):
@@ -60,26 +61,39 @@ class ThreadLocalShotgun(object):
         self.base_url = prototype.base_url
         self.config = prototype.config
 
-    def _local_instance(self, create=True):
+    def _create_instance(self):
+        instance = Shotgun(self.base_url, 'dummy_script_name', 'dummy_api_key')
+        instance.config = self.config
+        return instance
 
+    def _acquire_instance(self):
         try:
-            return getattr(self._locals, 'instance')
-        except AttributeError:
-            if create:
-                # Create a new object, and share our config with it.
-                instance = Shotgun(self.base_url, 'dummy_script_name', 'dummy_api_key')
-                instance.config = self.config
-                setattr(self._locals, 'instance', instance)
-                return instance
+            return self._free_instances.pop(0)
+        except IndexError:
+            pass
+        return self._create_instance()
+
+    def _release_instance(self, instance):
+        self._free_instances.append(instance)
+
+    @contextlib.contextmanager
+    def _context(self):
+        instance = self._acquire_instance()
+        try:
+            yield instance
+        finally:
+            self._release_instance(instance)
 
     @classmethod
     def _add_local_attr(cls, name):
 
         def getter(self):
-            return getattr(self._local_instance(), name)
+            with self._context() as instance:
+                return getattr(instance, name)
 
         def setter(self, value):
-            setattr(self._local_instance(), name, value)
+            with self._context() as instance:
+                setattr(instance, name, value)
 
         getter.__name__ = name
         setattr(cls, name, property(getter, setter))
@@ -91,17 +105,18 @@ class ThreadLocalShotgun(object):
 
         @functools.wraps(existing)
         def method(self, *args, **kwargs):
-            return existing(self._local_instance(), *args, **kwargs)
+            with self._context() as instance:
+                return existing(instance, *args, **kwargs)
 
         setattr(cls, name, method)
 
 
 # Register the attributes we want to proxy.
 for name in ('client_caps', 'server_caps'):
-    ThreadLocalShotgun._add_local_attr(name)
+    ShotgunPool._add_local_attr(name)
 
 # Register all public methods.
 for name, value in Shotgun.__dict__.iteritems():
     if not name.startswith('_') and isinstance(value, types.FunctionType):
-        ThreadLocalShotgun._add_local_method(name)
+        ShotgunPool._add_local_method(name)
 

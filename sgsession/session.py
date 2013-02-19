@@ -19,7 +19,7 @@ import warnings
 from shotgun_api3 import Shotgun as _BaseShotgun
 
 from .entity import Entity
-from .threading import ThreadLocalShotgun
+from .pool import ShotgunPool
 
 class EntityNotFoundWarning(UserWarning):
     pass
@@ -36,7 +36,7 @@ class Session(object):
     api registry connector.
 
     If passed a descendant of ``shotgun_api3.Shotgun`` (or one is constructed
-    via the registry), it will be wrapped in a :class:`~sgsession.threading.ThreadLocalShotgun` so that
+    via the registry), it will be wrapped in a :class:`~sgsession.pool.ShotgunPool` so that
     it becomes thread-safe. Any other objects (e.g. mock servers) are used
     unmodified.
 
@@ -102,7 +102,7 @@ class Session(object):
 
         # Wrap basic shotgun instances in our threader.
         if isinstance(shotgun, _BaseShotgun):
-            shotgun = ThreadLocalShotgun(shotgun)
+            shotgun = ShotgunPool(shotgun)
 
         self.shotgun = shotgun
         self.cache = {}

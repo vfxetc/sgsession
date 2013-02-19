@@ -1,7 +1,1 @@
-``sgsession.ThreadLocalShotgun``
-================================
-
-.. automodule:: sgsession.threading
-    
-    .. autoclass:: ThreadLocalShotgun
-
+See :class:`sgsession.pool.ShotgunPool`
