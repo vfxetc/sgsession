@@ -20,21 +20,21 @@ class TestRetired(TestCase):
 
     def test_delete_oldschool(self):
 
-        seq = self.proj.Sequence('About_To_Retire_%d' % next(count), sg_status_list='rev')
+        seq = self.proj.Sequence('About_To_Retire_%d' % next(count), sg_status_list='ip')
         seq = self.session.merge(seq)
         self.session.delete('Sequence', seq['id'])
         self.assertFalse(seq.exists())
 
     def test_delete_shortcut(self):
 
-        seq = self.proj.Sequence('About_To_Retire_%d' % next(count), sg_status_list='rev')
+        seq = self.proj.Sequence('About_To_Retire_%d' % next(count), sg_status_list='ip')
         seq = self.session.merge(seq)
         self.session.delete(seq)
         self.assertFalse(seq.exists())
 
     def test_retired_instance_fetch(self):
 
-        seq = self.proj.Sequence('About_To_Retire_%d' % next(count), sg_status_list='rev')
+        seq = self.proj.Sequence('About_To_Retire_%d' % next(count), sg_status_list='ip')
         seq = self.session.merge(seq)
 
         self.sg.delete('Sequence', seq['id'])
@@ -50,7 +50,7 @@ class TestRetired(TestCase):
 
     def test_set_exists_on_fetch(self):
 
-        seq = self.proj.Sequence('About_To_Retire_%d' % next(count), sg_status_list='rev')
+        seq = self.proj.Sequence('About_To_Retire_%d' % next(count), sg_status_list='ip')
         seq = self.session.merge(seq)
 
         self.assertTrue(seq.exists())
@@ -63,7 +63,7 @@ class TestRetired(TestCase):
 
     def test_session_filter_exists(self):
 
-        seqs = [self.proj.Sequence('About_To_Retire_%d' % next(count), sg_status_list='rev') for i in range(3)]
+        seqs = [self.proj.Sequence('About_To_Retire_%d' % next(count), sg_status_list='ip') for i in range(3)]
         seqs = [self.session.merge(x) for x in seqs]
 
         deleted = seqs[1]
