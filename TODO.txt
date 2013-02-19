@@ -1,4 +1,5 @@
 
+
 - mutable collections: BoundList and BountDict
     - attach to an Entity and merge all new data into the session
     - allow native tuples, but merge everything in them
@@ -14,7 +15,6 @@
 - session.refresh(entities)
 
 - entity.commit(), an Entity-level update
-
 - entity.delete()
 
 - entity type remapping (mainly for custom entities)
@@ -34,5 +34,11 @@
 
 - only fetch the "important" fields/links that are not already satisfied, unless
   explicitly requested to do so
+
+- ORM-style queries, to simplify the new deep-filters
   
+  sg.query('PublishEvent', 'sg_type', 'sg_version').filter('id', '>', 12).order_by('created_at').one()
+  sg.query('Task', 'content', 'step').filter({'assignees': me}, 'or', {'assignees': mark}
+  sg.get(type_, id) -> sg.Task(id) -> sg.query(type_).filter('id', 'is', id).first()
+
   

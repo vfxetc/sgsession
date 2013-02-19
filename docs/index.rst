@@ -16,6 +16,7 @@ Contents
    overview
    session
    entity
+   threading
 
 ..
     Indices and tables
