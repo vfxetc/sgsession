@@ -16,8 +16,10 @@ import os
 import threading
 import warnings
 
-from .entity import Entity
+from shotgun_api3 import Shotgun as _BaseShotgun
 
+from .entity import Entity
+from .threading import LocalShotgun
 
 class EntityNotFoundWarning(UserWarning):
     pass
@@ -78,7 +80,17 @@ class Session(object):
         },
     }
     
-    def __init__(self, shotgun=None):
+    def __init__(self, shotgun=None, *args, **kwargs):
+
+        # Lookup strings in the script registry.
+        if isinstance(shotgun, basestring):
+            import shotgun_api3_registry
+            shotgun = shotgun_api3_registry.connect(shotgun, *args, **kwargs)
+
+        # Wrap basic shotgun instances in our threader.
+        if isinstance(shotgun, _BaseShotgun):
+            shotgun = LocalShotgun(shotgun)
+
         self.shotgun = shotgun
         self.cache = {}
     
