@@ -62,7 +62,7 @@ class ShotgunPool(object):
         self.config = prototype.config
 
     def _create_instance(self):
-        instance = Shotgun(self.base_url, 'dummy_script_name', 'dummy_api_key')
+        instance = Shotgun(self.base_url, 'dummy_script_name', 'dummy_api_key', connect=False)
         instance.config = self.config
         return instance
 
