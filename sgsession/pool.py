@@ -1,21 +1,22 @@
-"""A workaround for ``shotgun_api3`` API design that does not allow threading.
+"""A wrapper around ``shotgun_api3`` to allow for parallel requests.
 
-The standard Shotgun API uses a connection object that is not thread-safe.
-Therefore, usage in a multi-threaded environment is tricker than I believe it
-really should be. Ergo, this module was concieved.
+The standard Shotgun API uses a connection object that serialized requests.
+Therefore, efficient usage in a multi-threaded environment is tricker than it
+could be. Ergo, this module was concieved.
 
 :class:`ShotgunPool` is a connection pool that creates fresh Shotgun instances
 when needed, and recycles old ones after use. It proxies attributes and
-methods to the managed instances. An actual Shotgun instance should never leak out of
-this object, so even passing around bound methods from this object should be safe.
+methods to the managed instances. An actual Shotgun instance should never leak
+out of this object, so even passing around bound methods from this object
+should be safe.
 
 E.g.::
 
     >>> # Construct and wrap a Shotgun instance.
     >>> shotgun = Shotgun(...)
     >>> shotgun = ShotgunPool(shotgun)
-
-    >>> # Use it like normal, except thread-safe.
+    >>>
+    >>> # Use it like normal, except in parallel.
     >>> shotgun.find('Task', ...)
 
 """
@@ -43,7 +44,6 @@ class ShotgunPool(object):
     The ``config`` object of the prototype will be shared amoung all Shotgun
     instances created; changing the settings on one Shotgun instance (or this
     object) will affect all other instances.
-
 
     """
 
