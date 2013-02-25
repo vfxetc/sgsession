@@ -105,7 +105,7 @@ class Session(object):
             shotgun = ShotgunPool(shotgun)
 
         self.shotgun = shotgun
-        self.cache = {}
+        self._cache = {}
     
     def __getattr__(self, name):
         return getattr(self.shotgun, name)
@@ -151,13 +151,13 @@ class Session(object):
         # If it already exists, then merge this into the old one.
         new = Entity(data['type'], data['id'], self)
         key = new.cache_key
-        if key in self.cache:
-            entity = self.cache[key]
+        if key in self._cache:
+            entity = self._cache[key]
             entity._update(entity, data, over, created_at)
             return entity
         
         # Return the new one.
-        self.cache[key] = new
+        self._cache[key] = new
         new._update(new, data, over, created_at)
         return new
     
@@ -292,7 +292,7 @@ class Session(object):
         
         """
         try:
-            return self.cache[(type_, id_)]
+            return self._cache[(type_, id_)]
         except KeyError:
             return self.find_one(type_, [('id', 'is', id_)])
     
