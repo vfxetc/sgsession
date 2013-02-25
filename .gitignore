@@ -5,3 +5,7 @@
 
 # Build products.
 /docs/_build
+
+# Testing products.
+cover
+.coverage

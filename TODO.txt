@@ -1,5 +1,4 @@
 
-
 - mutable collections: BoundList and BountDict
     - attach to an Entity and merge all new data into the session
     - allow native tuples, but merge everything in them
@@ -25,12 +24,18 @@
     e.g. sg_code -> code
 
 - automatic "sg_" prefix detection
-    - entity['path'] looks for 'path' and then 'sg_path', and would fetch for both
-    - entity['sg_path'] looks for 'sg_path', and then 'path', and would fetch for both
-    - entity['!path'] is definitely only 'path' (or some other syntax)
-    - the only collisions are on Shot, with the "Raw" version not having a
-      prefix. The "Raw" version isn't even exposed in "All Fields", so maybe
-      they are connected behind the scenes
+  - Session maintains a mapping of field names, so that we can specify what to
+    actually look for when we ask for something else.
+  - When a field is asked for that is not yet in that mapping, request both the
+    "sg_" prefixed version and the normal version. When the response comes back
+    record entries for both into the field mapping.
+  - This results in 4x increase of fields for links on the first request; oh
+    well.
+  - You will always get back the specific one that you ask for if they both
+    exist; e.g. PublishEvent.type and PublishEvent.sg_type
+  - This would need to be a translation layer between our underlying entities
+    and the server, and not just between the consumer of the entity and the
+    entity.
 
 - only fetch the "important" fields/links that are not already satisfied, unless
   explicitly requested to do so
