@@ -1,4 +1,12 @@
 
+- sgsession.Entity.fetch(..., async=True) would be very handy in some
+  scenarios. Just use futures behind the scenes. This could inteligently
+  merge several requests as well (in the future).
+
+- sgfs-tag --list [path]
+  sgfs-tag --create type id [path]
+  sgfs-tag --delete [[type] id] [path]
+
 - mutable collections: BoundList and BountDict
     - attach to an Entity and merge all new data into the session
     - allow native tuples, but merge everything in them
@@ -24,6 +32,7 @@
     e.g. sg_code -> code
 
 - automatic "sg_" prefix detection
+
   - Session maintains a mapping of field names, so that we can specify what to
     actually look for when we ask for something else.
   - When a field is asked for that is not yet in that mapping, request both the
@@ -36,6 +45,12 @@
   - This would need to be a translation layer between our underlying entities
     and the server, and not just between the consumer of the entity and the
     entity.
+
+  X This won't actually work in the lazy-loading manner specified above since
+    we need to translate fields as they are merged in from offline sources, and
+    we are unable to do that translation until it comes from the server. This
+    would also potentially invalidate previously cached data.
+  X This seems like a BAD idea.
 
 - only fetch the "important" fields/links that are not already satisfied, unless
   explicitly requested to do so
