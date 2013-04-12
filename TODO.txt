@@ -62,3 +62,11 @@
   sg.get(type_, id) -> sg.Task(id) -> sg.query(type_).filter('id', 'is', id).first()
 
   
+- track fields which don't exist with a sentinel so that Entity.fetch(...) knows to not go looking for it on the next call.
+
+- with session.batch() as batch:
+    x = batch.create('Task', ...)
+
+- evaluators for all the shotgun filters?
+- shortcut find when we have enough data to do it?
+
