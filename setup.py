@@ -1,4 +1,4 @@
-from distutils.core import setup
+from setuptools import setup, find_packages
 
 setup(
     name='sgsession',
@@ -6,7 +6,7 @@ setup(
     description='Shotgun ORM/Session.',
     url='http://github.com/westernx/sgsession',
     
-    packages=['sgsession'],
+    packages=find_packages(exclude=['build*', 'tests*']),
     
     author='Mike Boers',
     author_email='sgsession@mikeboers.com',
