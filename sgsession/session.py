@@ -685,6 +685,25 @@ class Session(object):
                 entity.fetch(fields)
             return entity
     
+    def get_url(self, url):
+        """Get one entity by it's URL on Shotgun.
+
+        :param str url: The url to parse.
+
+        """
+
+        # Shotgun detail URL.
+        m = re.match(r'^https?://\w+\.shotgunstudio\.com/detail/([A-Za-z]+)/(\d+)', url)
+        if m:
+            return self.get(m.group(1).title(), int(m.group(2)))
+    
+        # Shotgun project overview URL.
+        m = re.match(r'^https?://\w+\.shotgunstudio\.com/page/\d+#([A-Z][A-Za-z]+)_(\d+)_', url)
+        if m:
+            return self.get(m.group(1).title(), int(m.group(2)))
+        
+        raise ValueError('cannot parse url: %r' % url)
+
     def _fetch(self, entities, fields, force=False):
         
         types = list(set(x['type'] for x in entities))

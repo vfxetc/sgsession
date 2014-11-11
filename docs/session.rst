@@ -11,6 +11,7 @@ Entity Control
         
 .. automethod:: sgsession.session.Session.merge
 .. automethod:: sgsession.session.Session.get
+.. automethod:: sgsession.session.Session.get_url
 .. automethod:: sgsession.session.Session.filter_exists
 
 
