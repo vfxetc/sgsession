@@ -200,7 +200,9 @@ class Entity(dict):
     
     def _update(self, dst, src, over=None, created_at=None, depth=0):
         # print ">>> MERGE", depth, dst, '<-', src
-        
+        if isinstance(created_at, str):
+            created_at = datetime.strptime(created_at, '%Y-%m-%d %H:%M:%S %Z')
+
         src = dict(src)
         
         # Convert datetimes to UTC
@@ -228,7 +230,14 @@ class Entity(dict):
             do_override = True
         elif over is None:
             if 'updated_at' in dst and ('updated_at' in src or created_at):
-                do_override = src.get('updated_at', created_at) > dst['updated_at']
+                dst_updated_at = dst['updated_at']
+                src_updated_at = src.get('updated_at', created_at)
+                if isinstance(dst_updated_at, str):
+                    dst_updated_at = datetime.strptime(dst_updated_at, '%Y-%m-%d %H:%M:%S %Z')
+                if isinstance(src_updated_at, str):
+                    src_updated_at = datetime.strptime(src_updated_at, '%Y-%m-%d %H:%M:%S %Z')
+
+                do_override = src_updated_at > dst_updated_at
             else:
                 do_override = True
         else:
