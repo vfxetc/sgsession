@@ -5,6 +5,8 @@
 
 # Build products.
 /docs/_build
+/build
+/*.egg-info
 
 # Testing products.
 cover
