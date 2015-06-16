@@ -1,7 +1,18 @@
 from datetime import datetime
+import functools
 import itertools
-import sys
 import re
+import sys
+
+
+def asyncable(func):
+    @functools.wraps(func)
+    def _wrapped(self, *args, **kwargs):
+        if kwargs.pop('async', False):
+            return self.session._submit_concurrent(func, self, *args, **kwargs)
+        else:
+            return func(self, *args, **kwargs)
+    return _wrapped
 
 
 class Entity(dict):
@@ -141,6 +152,7 @@ class Entity(dict):
         depth -= 1
         print '\t' * depth + '}'
     
+    @asyncable
     def exists(self, check=True, force=False):
         """Determine if this entity still exists (non-retired) on the server.
 
@@ -265,7 +277,7 @@ class Entity(dict):
     def copy(self):
         raise RuntimeError("cannot copy %s" % self.__class__.__name__)
     
-    
+    @asyncable
     def get(self, fields, default=None):
         """Get field value(s) if they exist, otherwise a default.
         
@@ -290,6 +302,7 @@ class Entity(dict):
         except KeyError:
             return default
     
+    @asyncable
     def fetch(self, fields, default=None, force=False):
         """Get field value(s), automatically fetching them from the server.
         
@@ -313,6 +326,7 @@ class Entity(dict):
         else:
             return tuple(self.get(x, default) for x in fields)
 
+    @asyncable
     def fetch_core(self):
         """Assert that all "important" fields exist on this Entity.
         
@@ -321,6 +335,7 @@ class Entity(dict):
         """
         self.session.fetch_core([self])
     
+    @asyncable
     def fetch_heirarchy(self):
         """Fetch the full upward heirarchy (toward the Project) from the server.
         
@@ -329,6 +344,7 @@ class Entity(dict):
         """
         return self.session.fetch_heirarchy([self])
     
+    @asyncable
     def fetch_backrefs(self, type_, field):
         """Fetch all backrefs to this Entity from the given type and field.
         
@@ -337,6 +353,7 @@ class Entity(dict):
         """
         self.session.fetch_backrefs([self], type_, field)
     
+    @asyncable
     def parent(self, fetch=True, extra=None):
         """Get the parent of this Entity, automatically fetching from the server."""
         try:
@@ -354,6 +371,7 @@ class Entity(dict):
         
         return self.get(field)
     
+    @asyncable
     def project(self, fetch=True):
         """Get the project of this Entity, automatically fetching from the server.
         
