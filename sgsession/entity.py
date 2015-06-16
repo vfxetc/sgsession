@@ -88,7 +88,8 @@ class Entity(dict):
         return ret
     
     def __repr__(self):
-        return '<Entity %s:%s at 0x%x>' % (self.get('type'), self.get('id'), id(self))
+        name = self.get('name') or self.get('code') or self.get('content')
+        return '<Entity %s:%s%s at 0x%x>' % (self.get('type'), self.get('id'), ' %r' % name if name else '', id(self))
     
     def __hash__(self):
         type_ = dict.get(self, 'type')
