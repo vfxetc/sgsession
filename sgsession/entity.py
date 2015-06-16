@@ -194,8 +194,12 @@ class Entity(dict):
                     break
                 local, type_, remote = m.groups()
                 src = dict.__getitem__(src, local)
+                if not isinstance(src, dict):
+                    # TODO: Should this be a TypeError?
+                    raise KeyError('') # will get replaced in a moment...
                 if dict.__getitem__(src, 'type') != type_:
-                    raise KeyError('') # Will get replaced in a moment...
+                    # TODO: Should this be a ValueError?
+                    raise KeyError('') # will get replaced in a moment...
             return dict.__getitem__(src, remote)
         except KeyError:
             raise KeyError(key)
