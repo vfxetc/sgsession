@@ -143,9 +143,7 @@ class Session(object):
         """
         
         # Pass through entities if they are owned by us.
-        if isinstance(data, Entity):
-            if data.session is not self:
-                raise ValueError('entity not owned by this session')
+        if isinstance(data, Entity) and data.session is self:
             return data
         
         # Contents of lists and tuples should get merged.
