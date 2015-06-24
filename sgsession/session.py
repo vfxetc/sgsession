@@ -11,6 +11,7 @@ instance.
 
 from __future__ import with_statement, absolute_import
 
+import errno
 import functools
 import itertools
 import os
@@ -549,7 +550,14 @@ class Session(object):
                 if not fetch:
                     return
                 
-                login = os.getlogin()
+                try:
+                    login = os.getlogin()
+                except OSError as e:
+                    # this fails on the farm, so fall back onto the envvar
+                    if e.errno != errno.ENOTTY:
+                        raise
+                    login = os.environ.get('USER')
+
                 filter_ = tuple(x.format(login=login) for x in filter)
                 user = self.find_one('HumanUser', [filter_], fields)
                 if user is not None:
