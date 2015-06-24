@@ -282,6 +282,54 @@ class Session(object):
             return results[0]
         return None
     
+    def find_iter(self, *args, **kwargs):
+
+        limit = kwargs.pop('limit', None) or None
+        per_page = kwargs.pop('per_page', limit or 500) # this is the default
+        async_count = kwargs.pop('async_count', 1)
+
+        kwargs['limit'] = per_page
+        kwargs['async'] = True
+
+        page = 1
+        futures = []
+        done = False
+
+        while not done:
+
+            # extract all complete results; we wait for the first one, but
+            # then take as many others as are already done
+            rows = futures.pop(0).result() if futures else None
+            while rows and futures and futures[0].done():
+                rows.extend(futures.pop(0).result())
+
+            # determine if we are done yet
+            if rows is not None:
+                # print 'got', len(rows)
+                # we hit the end of results
+                if not rows or len(rows) < per_page:
+                    done = True
+                # we hit the total requested
+                if limit is not None:
+                    limit -= len(rows)
+                    if limit <= 0:
+                        done = True
+
+            # queue up the next queries
+            while not done and len(futures) < async_count:
+                # print 'queing', page
+                kwargs['page'] = page
+                futures.append(self.find(*args, **kwargs))
+                page += 1
+
+            # yield results
+            if rows is not None:
+                for x in rows:
+                    yield x
+
+
+
+
     @asyncable
     def delete(self, entity, entity_id=None):
         """Delete one entity.
