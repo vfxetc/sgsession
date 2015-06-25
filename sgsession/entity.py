@@ -87,8 +87,12 @@ class Entity(dict):
 
         return ret
     
+    @property
+    def name(self):
+        return self.get('name') or self.get('code') or self.get('content')
+    
     def __repr__(self):
-        name = self.get('name') or self.get('code') or self.get('content')
+        name = self.name
         return '<Entity %s:%s%s at 0x%x>' % (self.get('type'), self.get('id'), ' %r' % name if name else '', id(self))
     
     def __hash__(self):
