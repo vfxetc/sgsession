@@ -262,14 +262,19 @@ class Session(object):
         `See the Shotgun docs for more. <https://github.com/shotgunsoftware/python-api/wiki/Reference%3A-Methods#wiki-find>`_
         
         """
-        fields = self._add_default_fields(type_, fields)
+
+        merge = kwargs.pop('merge', True)
+        if kwargs.pop('add_default_fields', True):
+            fields = self._add_default_fields(type_, fields)
         filters = self._minimize_entities(filters)
+
         result = self.shotgun.find(type_, filters, fields, *args, **kwargs)
-        return [self.merge(x, over=True) for x in result]
+
+        return [self.merge(x, over=True) for x in result] if merge else result
     
     @asyncable
     def find_one(self, entity_type, filters, fields=None, order=None, 
-        filter_operator=None, retired_only=False):
+        filter_operator=None, retired_only=False, **kwargs):
         """Find one entity.
         
         :return: :class:`~sgsession.entity.Entity` or ``None``.
@@ -278,7 +283,7 @@ class Session(object):
         
         """
         results = self.find(entity_type, filters, fields, order, 
-            filter_operator, 1, retired_only)
+            filter_operator, 1, retired_only, **kwargs)
         if results:
             return results[0]
         return None
