@@ -104,10 +104,14 @@ class Entity(dict):
     
     def pprint(self, backrefs=None, depth=0):
         """Print this entity, all links and optional backrefs."""
-        self._pprint(backrefs, depth, set())
+        print ''.join(self._pprint(backrefs, depth, set()))
     
+    def pformat(self, backrefs=None, depth=0):
+        """Stringify this entity, all links and optional backrefs."""
+        return ''.join(self._pprint(backrefs, depth, set()))
+
     def _pprint(self, backrefs, depth, visited):
-        print '%s:%s at 0x%x;' % (self.get('type'), self.get('id'), id(self)),
+        yield '%s:%s at 0x%x; ' % (self.get('type'), self.get('id'), id(self))
         
         # Did you know that bools are ints?
         if isinstance(backrefs, bool):
@@ -116,46 +120,48 @@ class Entity(dict):
             backrefs = 0
         
         if id(self) in visited:
-            print '...'
+            yield '...\n'
             return
         visited.add(id(self))
         
         if len(self) <= 2:
-            print '{}'
+            yield '{}\n'
             return
         
-        print '{' 
+        yield '{\n' 
         depth += 1
         for k, v in sorted(self.iteritems()):
             if k in ('id', 'type'):
                 continue
             if isinstance(v, Entity):
-                print '%s%s =' % ('\t' * depth, k),
-                v._pprint(backrefs, depth, visited)
+                yield '%s%s = ' % ('\t' * depth, k)
+                for sub in v._pprint(backrefs, depth, visited):
+                    yield sub
             else:
-                print '%s%s = %r' % ('\t' * depth, k, v)
+                yield '%s%s = %r\n' % ('\t' * depth, k, v)
         
         if backrefs is not None:
             for (type_, field), entities in sorted(self.backrefs.iteritems()):
                 # Using their wierd filter syntax here.
-                print '%s$FROM$%s.%s:' % (
+                yield '%s$FROM$%s.%s: ' % (
                     '\t' * depth,
                     type_,
                     field,
-                ),
+                )
                 if backrefs > 0:
-                    print '['
+                    yield '[\n'
                     depth += 1
                     for x in entities:
-                        print '%s-' % ('\t' * depth, ),
-                        x._pprint(backrefs - 1, depth, visited)
+                        yield '%s- ' % ('\t' * depth, )
+                        for sub in x._pprint(backrefs - 1, depth, visited):
+                            yield sub
                     depth -= 1
-                    print '\t' * depth + ']'
+                    yield '\t' * depth + ']\n'
                 else:
-                    print ', '.join(str(x) for x in sorted(x['id'] for x in entities))
+                    yield ', '.join(str(x) for x in sorted(x['id'] for x in entities)) + '\n'
         
         depth -= 1
-        print '\t' * depth + '}'
+        yield '\t' * depth + '}\n'
     
     @asyncable
     def exists(self, check=True, force=False):
