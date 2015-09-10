@@ -1,13 +1,9 @@
 
-- sgsession.Entity.fetch(..., async=True) would be very handy in some
-  scenarios. Just use futures behind the scenes. This could inteligently
-  merge several requests as well (in the future).
-
 - sgfs-tag --list [path]
   sgfs-tag --create type id [path]
   sgfs-tag --delete [[type] id] [path]
 
-- mutable collections: BoundList and BountDict
+- mutable collections: BoundList and BoundDict
     - attach to an Entity and merge all new data into the session
     - allow native tuples, but merge everything in them
     - in the future they can mark an entity as updated so that session.commit()

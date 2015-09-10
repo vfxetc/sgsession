@@ -22,6 +22,8 @@ from shotgun_api3 import Shotgun as _BaseShotgun
 
 from .entity import Entity
 from .pool import ShotgunPool
+from .utils import expand_braces
+
 
 class EntityNotFoundWarning(UserWarning):
     pass
@@ -266,9 +268,16 @@ class Session(object):
         merge = kwargs.pop('merge', True)
         if kwargs.pop('add_default_fields', True):
             fields = self._add_default_fields(type_, fields)
+
+        # Expand braces in fields.
+        expanded_fields = set()
+        for field in fields:
+            expanded_fields.update(expand_braces(field))
+        fields = sorted(expanded_fields)
+
         filters = self._minimize_entities(filters)
 
-        result = self.shotgun.find(type_, filters, fields, *args, **kwargs)
+        result = self.shotgun.find(type_, filters, expanded_fields, *args, **kwargs)
 
         return [self.merge(x, over=True) for x in result] if merge else result
     
@@ -494,7 +503,7 @@ class Session(object):
         With (new-ish) arbitrarily-deep-links on Shotgun, this method could be
         made quite a bit more effiecient, since it should be able to request
         the entire heirarchy for any given type at once.
-        
+
         See :attr:`parent_fields`.
         
         """

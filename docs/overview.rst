@@ -85,6 +85,15 @@ Several fields will always be queried for whenever you operate on entities. Thes
     }
 
 
+Brace Expansion
+---------------
+
+During a ``find`` or ``find_one``, return fields can be specified with brace
+expansions to allow for a more compact representation of complex links::
+
+    >>> session.find('Task', [], ['entity.{Asset,Shot}.{name,code}'])
+
+
 Efficient Heirarchies
 ---------------------
 
