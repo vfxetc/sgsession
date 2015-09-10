@@ -491,12 +491,18 @@ class Session(object):
     def fetch_heirarchy(self, to_fetch):
         """Populate the parents as far up as we can go, and return all involved.
         
+        With (new-ish) arbitrarily-deep-links on Shotgun, this method could be
+        made quite a bit more effiecient, since it should be able to request
+        the entire heirarchy for any given type at once.
+        
         See :attr:`parent_fields`.
         
         """
         
         all_nodes = set()
         to_resolve = set()
+        missing = set()
+
         while to_fetch or to_resolve:
 
             # Go as far up as we already have for the specified entities.
@@ -505,10 +511,10 @@ class Session(object):
                 while entity.parent(fetch=False):
                     entity = entity.parent()
                     all_nodes.add(entity)
-                if entity['type'] != 'Project':
+                if entity['type'] != 'Project' and entity not in missing:
                     to_resolve.add(entity)
             
-            # Bail.
+            # There is nothing new to fetch; bail!
             if not to_resolve:
                 break
             
@@ -524,7 +530,12 @@ class Session(object):
             # Fetch the parent names.
             ids = [x['id'] for x in to_fetch]
             parent_name = self.parent_fields[type_]
-            self.find(type_, [['id', 'in'] + ids], [parent_name])
+            found = self.find(type_, [['id', 'in'] + ids], [parent_name])
+
+            # Track those which didn't come back from the API. Normally, this
+            # wouldn't happen, but can result from a race condition OR from
+            # an error on the server side (or a caching layer).
+            missing.update(to_fetch.difference(found))
         
         return list(all_nodes)
     
