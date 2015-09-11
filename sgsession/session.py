@@ -277,7 +277,7 @@ class Session(object):
 
         filters = self._minimize_entities(filters)
 
-        result = self.shotgun.find(type_, filters, expanded_fields, *args, **kwargs)
+        result = self.shotgun.find(type_, filters, fields, *args, **kwargs)
 
         return [self.merge(x, over=True) for x in result] if merge else result
     
