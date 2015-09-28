@@ -4,6 +4,8 @@ import itertools
 import re
 import sys
 
+from .utils import parse_isotime
+
 
 def asyncable(func):
     @functools.wraps(func)
@@ -257,13 +259,8 @@ class Entity(dict):
             do_override = True
         elif over is None:
             if 'updated_at' in dst and ('updated_at' in src or created_at):
-                dst_updated_at = dst['updated_at']
-                src_updated_at = src.get('updated_at', created_at)
-                if isinstance(dst_updated_at, str):
-                    dst_updated_at = datetime.strptime(dst_updated_at, '%Y-%m-%d %H:%M:%S %Z')
-                if isinstance(src_updated_at, str):
-                    src_updated_at = datetime.strptime(src_updated_at, '%Y-%m-%d %H:%M:%S %Z')
-
+                dst_updated_at = parse_isotime(dst['updated_at'])
+                src_updated_at = parse_isotime(src.get('updated_at', created_at))
                 do_override = src_updated_at > dst_updated_at
             else:
                 do_override = True

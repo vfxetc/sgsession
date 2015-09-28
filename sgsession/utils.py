@@ -1,3 +1,4 @@
+from datetime import datetime
 import re
 import itertools
 
@@ -12,3 +13,14 @@ def expand_braces(pattern):
         parts[1::2] = product
         res.append(''.join(parts))
     return res
+
+
+def parse_isotime(x):
+    if isinstance(x, basestring):
+        try:
+            return datetime.strptime(x, '%Y-%m-%d %H:%M:%S %Z')
+        except ValueError:
+            return datetime.strptime(x, '%Y-%m-%d %H:%M:%S')
+    else:
+        return x
+
