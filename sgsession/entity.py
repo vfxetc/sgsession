@@ -91,6 +91,7 @@ class Entity(dict):
     
     @property
     def name(self):
+        # TODO: Use sgschema to find identifier column.
         return self.get('name') or self.get('code') or self.get('content')
     
     def __repr__(self):
@@ -187,6 +188,12 @@ class Entity(dict):
 
         return self._exists
 
+    def _resolve_key(self, key):
+        if self.session.schema:
+            return self.session.schema.resolve_one_field(self['type'], key)
+        else:
+            return key
+
     def __contains__(self, key):
         try:
             self[key]
@@ -196,8 +203,15 @@ class Entity(dict):
             return True
     
     def __getitem__(self, key):
+
         if not isinstance(key, basestring):
             raise KeyError(key)
+
+        if key in ('id', 'type'): # Prevent a loop.
+            return dict.__getitem__(self, key)
+
+        key = self._resolve_key(key)
+
         try:
             src = self
             remote = key
@@ -218,9 +232,11 @@ class Entity(dict):
             raise KeyError(key)
     
     def __setitem__(self, key, value):
+        key = self._resolve_key(key)
         dict.__setitem__(self, key, self.session.merge(value))
     
     def setdefault(self, key, value):
+        key = self._resolve_key(key)
         return dict.setdefault(self, key, self.session.merge(value))
     
     def update(self, *args, **kwargs):
@@ -233,7 +249,10 @@ class Entity(dict):
             created_at = datetime.strptime(created_at, '%Y-%m-%d %H:%M:%S %Z')
 
         src = dict(src)
-        
+
+        if self.session.schema:
+            self.session.schema.resolve_structure(src, self['type'])
+
         # Convert datetimes to UTC
         for k, v in src.iteritems():
             if isinstance(v, datetime) and v.tzinfo is not None:

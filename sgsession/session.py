@@ -19,6 +19,7 @@ import threading
 import warnings
 
 from shotgun_api3 import Shotgun as _BaseShotgun
+from sgschema import Schema
 
 from .entity import Entity
 from .pool import ShotgunPool
@@ -107,7 +108,7 @@ class Session(object):
         },
     }
     
-    def __init__(self, shotgun=None, *args, **kwargs):
+    def __init__(self, shotgun=None, schema=None, *args, **kwargs):
 
         # Lookup strings in the script registry.
         if isinstance(shotgun, basestring):
@@ -119,13 +120,22 @@ class Session(object):
             shotgun = ShotgunPool(shotgun)
 
         self.shotgun = shotgun
+
+        if schema is not None:
+            self.schema = schema or None
+        else:
+            try:
+                self.schema = Schema.from_cache(shotgun) if shotgun is not None else None
+            except ValueError:
+                self.schema = None
+
         self._cache = {}
         self._thread_pool = None
     
     def __getattr__(self, name):
         return getattr(self.shotgun, name)
     
-    def merge(self, data, over=None, created_at=None):
+    def merge(self, data, over=None, created_at=None, resolve=True):
         """Import data containing raw entities into the session.
         
         This will effectively return a copy of any nested structure of lists,
@@ -161,6 +171,10 @@ class Session(object):
         if not ('type' in data and 'id' in data):
             return dict((k, self.merge(v, over, created_at)) for k, v in data.iteritems())
 
+        # If we have schema, resolve all the fields.
+        if resolve and self.schema:
+            data = self.schema.resolve_structure(data)
+
         # If it already exists, then merge this into the old one.
         new = Entity(data['type'], data['id'], self)
         key = new.cache_key
@@ -190,8 +204,12 @@ class Session(object):
         
         """
         data = self._minimize_entities(data)
+        if self.schema:
+            type_ = self.schema.resolve_one_entity(type_)
+            data = self.schema.resolve_structure(data, type_)
+            return_fields = self.schema.resolve_field(type_, return_fields) if return_fields else []
         return_fields = self._add_default_fields(type_, return_fields)
-        return self.merge(self.shotgun.create(type_, data, return_fields))
+        return self.merge(self.shotgun.create(type_, data, return_fields), resolve=False)
 
     @asyncable
     def update(self, type_, id, data):
@@ -203,7 +221,10 @@ class Session(object):
         
         """
         data = self._minimize_entities(data)
-        return self.merge(self.shotgun.update(type_, id, data), over=True)
+        if self.schema:
+            type_ = self.schema.resolve_one_entity(type_)
+            data = self.schema.resolve_structure(data, type_)
+        return self.merge(self.shotgun.update(type_, id, data), over=True, resolve=False)
 
     @asyncable
     def batch(self, requests):
@@ -212,7 +233,10 @@ class Session(object):
         `See the Shotgun docs for more. <https://github.com/shotgunsoftware/python-api/wiki/Reference%3A-Methods#wiki-batch>`_
         
         """
-        return [self.merge(x, over=True) if isinstance(x, dict) else x for x in self.shotgun.batch(requests)]
+        requests = self._minimize_entities(requests)
+        if self.schema:
+            requests = self.schema.resolve_structure(requests)
+        return [self.merge(x, over=True, resolve=False) if isinstance(x, dict) else x for x in self.shotgun.batch(requests)]
     
     def _add_default_fields(self, type_, fields):
         
@@ -266,6 +290,10 @@ class Session(object):
         """
 
         merge = kwargs.pop('merge', True)
+
+        if self.schema:
+            type_ = self.schema.resolve_one_entity(type_)
+
         if kwargs.pop('add_default_fields', True):
             fields = self._add_default_fields(type_, fields)
 
@@ -275,11 +303,20 @@ class Session(object):
             expanded_fields.update(expand_braces(field))
         fields = sorted(expanded_fields)
 
+        if self.schema:
+            fields = self.schema.resolve_field(type_, fields) if fields else []
+
         filters = self._minimize_entities(filters)
+
+        if self.schema and isinstance(filters, (list, tuple)):
+            for i, old_filter in enumerate(filters):
+                filter_ = [self.schema.resolve_one_field(type_, old_filter[0])]
+                filter_.extend(old_filter[1:])
+                filters[i] = filter_
 
         result = self.shotgun.find(type_, filters, fields, *args, **kwargs)
 
-        return [self.merge(x, over=True) for x in result] if merge else result
+        return [self.merge(x, over=True, resolve=False) for x in result] if merge else result
     
     @asyncable
     def find_one(self, entity_type, filters, fields=None, order=None, 
@@ -357,6 +394,8 @@ class Session(object):
         """
 
         if not isinstance(entity, Entity):
+            if self.schema:
+                entity = self.schema.resolve_one_entity(entity)
             if not entity_id:
                 raise ValueError('must provide entity_id')
             entity = self.merge({'type': entity, 'id': entity_id})
@@ -375,6 +414,8 @@ class Session(object):
         :param bool fetch: Request this entity from the server if not cached?
         
         """
+        if self.schema:
+            type_ = self.schema.resolve_one_entity(type_)
         try:
             return self._cache[(type_, id_)]
         except KeyError:

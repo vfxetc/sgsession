@@ -1,14 +1,30 @@
 
-- sgfs-tag --list [path]
-  sgfs-tag --create type id [path]
-  sgfs-tag --delete [[type] id] [path]
+- use sgschema for resolving field names
+
+  - schema.resolve_one() -> assert there is only one
+  - schema.resolve should deal with dotted names
+  
+  - need to special-case "type" everywhere
+  - session.create() -> resolve the keys
+  - session.find() -> resolve the filters, order, return_fields
+  - session.update() -> resolve the data
+  - session.merge() -> resolve the data; making the assumption that the
+    data is coming from Shotgun, it will not get mutated, so it is okay that
+    there isn't a seperate merge for Shotgun vs user data.
+
+  - use $sgsession:parent alias
+  - use #sgsession:preload tag
+
+  - use allowed_entity_types to do auto-loading
+
+
 
 - mutable collections: BoundList and BoundDict
     - attach to an Entity and merge all new data into the session
     - allow native tuples, but merge everything in them
     - in the future they can mark an entity as updated so that session.commit()
       can update everything in a batch
-    	- session.create(*, **, deferred=True) will be created during a
+    	- session.create(*, **, defer=True) will be created during a
     	  commit
 
 - fetch should complain when the entity doesn't exist, or mark the entity as
@@ -19,34 +35,6 @@
 
 - entity.commit(), an Entity-level update
 - entity.delete()
-
-- entity type remapping (mainly for custom entities)
-    e.g. Publish -> PublishEvent
-    or   NewType -> CustomeEntity8
-
-- field remapping (for differences between servers)
-    e.g. sg_code -> code
-
-- automatic "sg_" prefix detection
-
-  - Session maintains a mapping of field names, so that we can specify what to
-    actually look for when we ask for something else.
-  - When a field is asked for that is not yet in that mapping, request both the
-    "sg_" prefixed version and the normal version. When the response comes back
-    record entries for both into the field mapping.
-  - This results in 4x increase of fields for links on the first request; oh
-    well.
-  - You will always get back the specific one that you ask for if they both
-    exist; e.g. PublishEvent.type and PublishEvent.sg_type
-  - This would need to be a translation layer between our underlying entities
-    and the server, and not just between the consumer of the entity and the
-    entity.
-
-  X This won't actually work in the lazy-loading manner specified above since
-    we need to translate fields as they are merged in from offline sources, and
-    we are unable to do that translation until it comes from the server. This
-    would also potentially invalidate previously cached data.
-  X This seems like a BAD idea.
 
 - only fetch the "important" fields/links that are not already satisfied, unless
   explicitly requested to do so
@@ -62,7 +50,4 @@
 
 - with session.batch() as batch:
     x = batch.create('Task', ...)
-
-- evaluators for all the shotgun filters?
-- shortcut find when we have enough data to do it?
 
