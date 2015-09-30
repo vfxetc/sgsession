@@ -245,8 +245,8 @@ class Entity(dict):
     
     def _update(self, dst, src, over=None, created_at=None, depth=0):
         # print ">>> MERGE", depth, dst, '<-', src
-        if isinstance(created_at, str):
-            created_at = datetime.strptime(created_at, '%Y-%m-%d %H:%M:%S %Z')
+        
+        created_at = parse_isotime(created_at)
 
         src = dict(src)
 
