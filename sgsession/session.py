@@ -406,7 +406,7 @@ class Session(object):
         return res
         
     @asyncable
-    def get(self, type_, id_, fetch=True):
+    def get(self, type_, id_, fields=None, fetch=True):
         """Get one entity by type and ID.
         
         :param str type_: The entity type to lookup.
@@ -417,9 +417,13 @@ class Session(object):
         if self.schema:
             type_ = self.schema.resolve_one_entity(type_)
         try:
-            return self._cache[(type_, id_)]
+            entity = self._cache[(type_, id_)]
         except KeyError:
-            return self.find_one(type_, [('id', 'is', id_)])
+            return self.find_one(type_, [('id', 'is', id_)], fields or [])
+        else:
+            if fetch and fields:
+                entity.fetch(fields)
+            return entity
     
     def _fetch(self, entities, fields, force=False):
         
