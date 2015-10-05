@@ -410,12 +410,19 @@ class Session(object):
         """Get one entity by type and ID.
         
         :param str type_: The entity type to lookup.
-        :param int id_: The entity ID to lookup.
+        :param int id_: The entity ID to lookup. Accepts ``list`` or ``tuple``
+            of IDs, and returns the same.
         :param bool fetch: Request this entity from the server if not cached?
         
         """
+
+        # Handle multiple IDs.
+        if isinstance(id_, (list, tuple)):
+            return type(id_)(self.get(type_, x) for x in id_)
+
         if self.schema:
             type_ = self.schema.resolve_one_entity(type_)
+
         try:
             entity = self._cache[(type_, id_)]
         except KeyError:
