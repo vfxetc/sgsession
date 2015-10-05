@@ -559,12 +559,17 @@ class Session(object):
         See :attr:`parent_fields`.
         
         """
-        
+
         all_nodes = set()
         to_resolve = set()
-        missing = set()
+        loop_count = 0
 
         while to_fetch or to_resolve:
+
+            # Just in case (because we have messed this up a few times before).
+            if loop_count > 20:
+                raise RuntimeError('likely infinite loop')
+            loop_count += 1
 
             # Go as far up as we already have for the specified entities.
             for entity in to_fetch:
@@ -572,7 +577,7 @@ class Session(object):
                 while entity.parent(fetch=False):
                     entity = entity.parent()
                     all_nodes.add(entity)
-                if entity['type'] != 'Project' and entity not in missing:
+                if entity['type'] != 'Project':
                     to_resolve.add(entity)
             
             # There is nothing new to fetch; bail!
@@ -593,10 +598,26 @@ class Session(object):
             parent_name = self.parent_fields[type_]
             found = self.find(type_, [['id', 'in'] + ids], [parent_name])
 
+            # Make sure we actually get something back for the parent field.
+            no_parent = [e['id'] for e in found if not e.get(parent_name)]
+            if no_parent:
+                raise ValueError('%s %s %s no %s' % (
+                    type_,
+                    ', '.join(str(id_) for id_ in sorted(no_parent)),
+                    'have' if len(no_parent) > 1 else 'has',
+                    parent_name,
+                ))
+
             # Track those which didn't come back from the API. Normally, this
             # wouldn't happen, but can result from a race condition OR from
             # an error on the server side (or a caching layer).
-            missing.update(to_fetch.difference(found))
+            missing = to_fetch.difference(found)
+            if missing:
+                raise ValueError('%s %s %s not exist' % (
+                    type_,
+                    ', '.join(str(id_) for id_ in sorted(no_parent)),
+                    'do' if len(missing) > 1 else 'does',
+                ))
         
         return list(all_nodes)
     

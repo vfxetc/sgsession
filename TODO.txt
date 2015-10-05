@@ -1,23 +1,8 @@
 
-- use sgschema for resolving field names
-
-  - schema.resolve_one() -> assert there is only one
-  - schema.resolve should deal with dotted names
-  
-  - need to special-case "type" everywhere
-  - session.create() -> resolve the keys
-  - session.find() -> resolve the filters, order, return_fields
-  - session.update() -> resolve the data
-  - session.merge() -> resolve the data; making the assumption that the
-    data is coming from Shotgun, it will not get mutated, so it is okay that
-    there isn't a seperate merge for Shotgun vs user data.
-
-  - use $sgsession:parent alias
-  - use #sgsession:preload tag
-
-  - use allowed_entity_types to do auto-loading
-
-
+- Attachment entities have a this_field field which is a dict that looks
+  very much like an entity. This should be special cased so that it doesn't
+  get merged into the Attachment entity (which results in trouble when copying
+  attachments from one entity to another).
 
 - mutable collections: BoundList and BoundDict
     - attach to an Entity and merge all new data into the session
