@@ -455,8 +455,8 @@ class Session(object):
             for e in entities:
                 e._exists = e['id'] not in missing
 
-            for id_ in missing:
-                warnings.warn('%s %d was not found' % (type_, id_), EntityNotFoundWarning)
+            if missing:
+                raise ValueError('%s %s not found' % (type_, ', '.join(map(str, sorted(missing)))))
 
     @asyncable
     def filter_exists(self, entities, check=True, force=False):
