@@ -271,12 +271,24 @@ class Session(object):
         return sorted(fields)
     
     def _minimize_entities(self, data):
+        
         if isinstance(data, dict):
+
+            # Attachments need to not be minimized, since they are often
+            # merged in with their own metadata. If we special cased merging
+            # them, then this could be a bit smarter and send only what is
+            # nessesary.
+            if data.get('type') == 'Attachment':
+                return data
+
             if 'type' in data and 'id' in data:
                 return dict(type=data['type'], id=data['id'])
+
             return dict((k, self._minimize_entities(v)) for k, v in data.iteritems())
+
         if isinstance(data, (list, tuple)):
             return [self._minimize_entities(x) for x in data]
+
         return data
     
     @asyncable
