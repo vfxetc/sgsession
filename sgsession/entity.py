@@ -189,8 +189,12 @@ class Entity(dict):
         return self._exists
 
     def _resolve_key(self, key):
-        if self.session.schema:
-            return self.session.schema.resolve_one_field(self['type'], key)
+        try:
+            schema = self.session.schema
+        except AttributeError:
+            schema = None
+        if schema:
+            return schema.resolve_one_field(self['type'], key)
         else:
             return key
 

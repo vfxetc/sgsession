@@ -18,7 +18,6 @@ import os
 import threading
 import warnings
 
-from shotgun_api3 import Shotgun as _BaseShotgun
 from sgschema import Schema
 
 from .entity import Entity
@@ -116,25 +115,51 @@ class Session(object):
             shotgun = shotgun_api3_registry.connect(shotgun, *args, **kwargs)
 
         # Wrap basic shotgun instances in our threader.
-        if isinstance(shotgun, _BaseShotgun):
-            shotgun = ShotgunPool(shotgun)
-
-        self.shotgun = shotgun
-
-        if schema is not None:
-            self.schema = schema or None
-        else:
-            try:
-                self.schema = Schema.from_cache(shotgun) if shotgun is not None else None
-            except ValueError:
-                self.schema = None
+        self._shotgun = ShotgunPool.wrap(shotgun)
+        self._schema = schema
 
         self._cache = {}
         self._thread_pool = None
     
+    @property
+    def shotgun(self):
+        # Automatically generate Shotgun when we need one.
+        # We use False to track that there should be nothing set here.
+        if self._shotgun is None:
+            import shotgun_api3_registry
+            self._shotgun = ShotgunPool.wrap(shotgun_api3_registry.connect())
+        return self._shotgun or None
+
+    @property
+    def schema(self):
+        # Automaticaly load schema when we need one.
+        # We use False to track that there should be nothing set here.
+        if self._schema is None:
+
+            # Wait on caching a schema here until there is a Shotgun, and
+            # don't automatically generate the Shotgun. This is a little iffy,
+            # but all of the tests rely upon this so far.
+            shotgun = self._shotgun
+            if not shotgun:
+                return
+
+            try:
+                self._schema = Schema.from_cache(shotgun)
+            except ValueError:
+                self._schema = False
+
+        return self._schema or None
+
     def __getattr__(self, name):
         return getattr(self.shotgun, name)
     
+    def __reduce__(self):
+        # We assume that the shotgun and sgcache will automatically regenerate.
+        # Generally, the user should be very careful when pickling sessions.
+        shotgun = False if self._shotgun is False else None
+        schema = False if self._schema is False else None
+        return self.__class__, (shotgun, schema)
+
     def merge(self, data, over=None, created_at=None, resolve=True):
         """Import data containing raw entities into the session.
         

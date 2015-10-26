@@ -47,6 +47,13 @@ class ShotgunPool(object):
 
     """
 
+    @classmethod
+    def wrap(cls, shotgun):
+        if isinstance(shotgun, Shotgun):
+            return cls(shotgun)
+        else:
+            return shotgun
+    
     def __init__(self, prototype, *args, **kwargs):
 
         self._free_instances = []
