@@ -57,6 +57,10 @@ class Session(object):
     it becomes thread-safe. Any other objects (e.g. mock servers) are used
     unmodified.
 
+    If passed nothing, ``shotgun_api3_registry.connect`` will be called
+    the first time :attr:`shotgun` is accessed (which will happen on many
+    operations). To stop this behaviour, pass ``False``.
+
     """
     
     #: Mapping of entity types to the field where their "parent" lives.
@@ -139,10 +143,8 @@ class Session(object):
         # We use False to track that there should be nothing set here.
         if self._schema is None:
 
-            # Wait on caching a schema here until there is a Shotgun, and
-            # don't automatically generate the Shotgun. This is a little iffy,
-            # but all of the tests rely upon this so far.
-            shotgun = self._shotgun
+            # Wait on caching a schema here until there is a Shotgun.
+            shotgun = self.shotgun
             if not shotgun:
                 return
 

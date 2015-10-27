@@ -11,7 +11,7 @@ dummy.count = 0
 class TestMerge(TestCase):
     
     def setUp(self):
-        self.session = Session(None)
+        self.session = Session(False)
     
     def merge(self, *args, **kwargs):
         for arg in args:

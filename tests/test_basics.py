@@ -4,7 +4,7 @@ from common import *
 class TestBasics(TestCase):
     
     def setUp(self):
-        self.session = Session(None)
+        self.session = Session(False)
     
     def test_nonhashable(self):
         a = self.session.merge(dict(a=1))

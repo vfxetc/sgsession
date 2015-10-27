@@ -18,7 +18,7 @@ class TestPickling(TestCase):
 
     def test_pickle_entity(self):
 
-        sg = Session()
+        sg = Session(False)
         e1 = sg.merge({'type': 'Dummy', 'id': 1234})
 
         e1['key'] = 'value'
@@ -31,7 +31,7 @@ class TestPickling(TestCase):
 
     def test_pickle_session_identity(self):
 
-        sg = Session()
+        sg = Session(False)
         e1 = sg.merge({'type': 'Dummy', 'id': 1234})
         e2 = sg.merge({'type': 'Dummy', 'id': 5678})
 
