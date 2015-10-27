@@ -28,6 +28,9 @@ from .utils import expand_braces
 class EntityNotFoundWarning(UserWarning):
     pass
 
+class EntityNotFoundError(ValueError):
+    pass
+
 
 def asyncable(func):
     @functools.wraps(func)
@@ -493,7 +496,7 @@ class Session(object):
                 e._exists = e['id'] not in missing
 
             if missing:
-                raise ValueError('%s %s not found' % (type_, ', '.join(map(str, sorted(missing)))))
+                raise EntityNotFoundError('%s %s not found' % (type_, ', '.join(map(str, sorted(missing)))))
 
     @asyncable
     def filter_exists(self, entities, check=True, force=False):
@@ -650,7 +653,7 @@ class Session(object):
             # an error on the server side (or a caching layer).
             missing = to_fetch.difference(found)
             if missing:
-                raise ValueError('%s %s %s not exist' % (
+                raise EntityNotFoundError('%s %s %s not exist' % (
                     type_,
                     ', '.join(str(id_) for id_ in sorted(no_parent)),
                     'do' if len(missing) > 1 else 'does',

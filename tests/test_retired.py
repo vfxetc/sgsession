@@ -42,11 +42,13 @@ class TestRetired(TestCase):
         # Force it to have to get it from the server again.
         del seq['sg_status_list']
 
-        with warnings.catch_warnings(record=True) as w:
-            self.assertIs(None, seq.fetch('sg_status_list'))
+        self.assertRaises(ValueError, seq.fetch, 'sg_status_list')
 
-        self.assertEqual(1, len(w), 'No warning was issued.')
-        self.assertEqual(w[0].message.args[0], 'Sequence %d was not found' % seq['id'])
+        # It used to only be a warning:
+        # with warnings.catch_warnings(record=True) as w:
+        #     self.assertIs(None, seq.fetch('sg_status_list'))
+        # self.assertEqual(1, len(w), 'No warning was issued.')
+        # self.assertEqual(w[0].message.args[0], 'Sequence %d was not found' % seq['id'])
 
     def test_set_exists_on_fetch(self):
 
@@ -57,7 +59,7 @@ class TestRetired(TestCase):
 
         self.sg.delete('Sequence', seq['id'])
 
-        self.session.fetch([seq], ['does_not_exist'])
+        self.assertRaises(ValueError, self.session.fetch, [seq], ['does_not_exist'])
 
         self.assertFalse(seq.exists())
 
