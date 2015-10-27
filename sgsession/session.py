@@ -123,6 +123,9 @@ class Session(object):
 
         # Wrap basic shotgun instances in our threader.
         self._shotgun = ShotgunPool.wrap(shotgun)
+        self._shotgun_args = None if shotgun else args
+        self._shotgun_kwargs = None if shotgun else kwargs
+
         self._schema = schema
 
         self._cache = {}
@@ -134,7 +137,9 @@ class Session(object):
         # We use False to track that there should be nothing set here.
         if self._shotgun is None:
             import shotgun_api3_registry
-            self._shotgun = ShotgunPool.wrap(shotgun_api3_registry.connect())
+            self._shotgun = ShotgunPool.wrap(shotgun_api3_registry.connect(
+                *self._shotgun_args, **self._shotgun_kwargs
+            ))
         return self._shotgun or None
 
     @property
