@@ -1,4 +1,6 @@
 
+- Document that sessions and entities lose all data on pickling.
+
 - Attachment entities have a this_field field which is a dict that looks
   very much like an entity. This should be special cased so that it doesn't
   get merged into the Attachment entity (which results in trouble when copying

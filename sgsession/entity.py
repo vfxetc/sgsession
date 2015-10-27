@@ -105,6 +105,11 @@ class Entity(dict):
             raise TypeError('entity must have type and id to be hashable')
         return hash((type_, id_))
     
+    def __reduce__(self):
+        # Pickling results in all of the data being dumped.
+        # The linked session will do the same.
+        return self.__class__, (dict.get(self, 'type'), dict.get(self, 'id'), self.session)
+
     def pprint(self, backrefs=None, depth=0):
         """Print this entity, all links and optional backrefs."""
         print ''.join(self._pprint(backrefs, depth, set()))
