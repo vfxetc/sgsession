@@ -60,6 +60,11 @@ class Entity(dict):
     def url(self):
         return '%s/detail/%s/%s' % (self.session.base_url, self['type'], self['id'])
     
+    def is_same_entity(self, other):
+        type_ = dict.get(self, 'type')
+        id_ = dict.get(self, 'id')
+        return type_ == other.get('type') and id_ == other.get('id')
+
     def as_dict(self):
         """Return the entity and all linked entities as pure :class:`dict`.
         
