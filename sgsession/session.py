@@ -289,9 +289,9 @@ class Session(object):
         # Add implied owners of deep-fields.
         implied = set()
         for field in fields:
-            parts = field.split('.', 2)
-            if len(parts) > 1:
-                implied.add('.'.join(parts[:2]) + '.id')
+            parts = field.split('.')
+            for i in xrange(2, len(parts) + 1, 2):
+                implied.add('.'.join(parts[:i]) + '.id')
         fields.update(implied)
 
         # Add important deep-fields for requested type.
@@ -350,11 +350,13 @@ class Session(object):
             expanded_fields.update(expand_braces(field))
         fields = sorted(expanded_fields)
 
+        # Resolve names in fields.
         if self.schema:
             fields = self.schema.resolve_field(type_, fields) if fields else []
 
         filters = self._minimize_entities(filters)
 
+        # Resolve names in filters.
         if self.schema and isinstance(filters, (list, tuple)):
             for i, old_filter in enumerate(filters):
                 filter_ = [self.schema.resolve_one_field(type_, old_filter[0])]
