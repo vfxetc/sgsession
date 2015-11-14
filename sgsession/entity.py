@@ -278,10 +278,25 @@ class Entity(dict):
             m = re.match(r'^(\w+)\.([A-Z]\w+)\.(.*)$', k)
             if m:
                 field, type_, deep_field = m.groups()
+
+                if v is None:
+
+                    # None IDs lead to None entities.
+                    if deep_field == 'id':
+                        src[field] = None
+                        continue
+                    # None non-IDs are ignored iff the ID field also 
+                    # exists and is None.
+                    else:
+                        id_field = '%s.%s.id' % (field, type_)
+                        if id_field in src and not src[id_field]:
+                            continue
+
                 if isinstance(src.setdefault(field, {}), dict):
                     # Ignore type mismatches and None fields.
                     if src[field].setdefault('type', type_) == type_ and v is not None:
                         src[field][deep_field] = v
+
                 elif v is not None:
                     raise ValueError('Setting deep value on non-dict')
                 # XXX: Is this dangerous?
