@@ -131,6 +131,13 @@ class Session(object):
         self._cache = {}
         self._thread_pool = None
     
+    @classmethod
+    def from_entity(cls, entity, *args, **kwargs):
+        if isinstance(entity, Entity) and entity.session:
+            return entity.session
+        else:
+            return cls(*args, **kwargs)
+
     @property
     def shotgun(self):
         # Automatically generate Shotgun when we need one.
@@ -196,7 +203,8 @@ class Session(object):
         
         # Contents of lists and tuples should get merged.
         if isinstance(data, (list, tuple)):
-            # Assuming that the real type can take reconstruction...
+            # Assuming that the real type can take reconstruction, and that
+            # there is nothing recursively defined.
             return type(data)(self.merge(x, over, created_at) for x in data)
         
         if not isinstance(data, dict):
