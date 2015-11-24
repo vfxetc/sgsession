@@ -42,6 +42,9 @@ def asyncable(func):
     return _wrapped
 
 
+_recursion_sentinel = object()
+
+
 class Session(object):
     
     """Shotgun wrapper.
@@ -177,7 +180,7 @@ class Session(object):
         schema = False if self._schema is False else None
         return self.__class__, (shotgun, schema)
 
-    def merge(self, data, over=None, created_at=None, resolve=True):
+    def merge(self, data, over=None, created_at=None, _depth=0, _memo=None):
         """Import data containing raw entities into the session.
         
         This will effectively return a copy of any nested structure of lists,
@@ -197,37 +200,68 @@ class Session(object):
         
         """
         
+        # Since we are dealing with recursive structures, we need to memoize
+        # the outputs by all of the inputs as we create them.
+        if _memo is None:
+            _memo = {}
+        id_ = id(data)
+        if id_ in _memo:
+            return _memo[id_]
+
+        _memo[id_] = _recursion_sentinel
+        obj = self._merge(data, over, created_at, _depth, _memo)
+
+        # If something fails at setting up a recursive object before returning,
+        # then we want to fail very hard.
+        if obj is _recursion_sentinel:
+            raise RuntimeError('un-memoized recursion')
+
+        _memo[id_] = obj
+        return obj
+
+    def _merge(self, data, over, created_at, depth, memo):
+
+        # No need to worry about resolving schema here, since Entity.__setitem__
+        # will ultimately do it.
+
         # Pass through entities if they are owned by us.
         if isinstance(data, Entity) and data.session is self:
             return data
         
         # Contents of lists and tuples should get merged.
-        if isinstance(data, (list, tuple)):
-            # Assuming that the real type can take reconstruction, and that
-            # there is nothing recursively defined.
-            return type(data)(self.merge(x, over, created_at) for x in data)
+        if isinstance(data, list):
+            # Lists can be cyclic; memoize them.
+            memo[id(data)] = new = type(data)()
+            new.extend(self.merge(x, over, created_at, depth + 1, memo) for x in data)
+            return new
+        if isinstance(data, tuple):
+            return type(data)(self.merge(x, over, created_at, depth + 1, memo) for x in data)
         
         if not isinstance(data, dict):
             return data
         
         # Non-entity dicts have all their values merged.
         if not ('type' in data and 'id' in data):
-            return dict((k, self.merge(v, over, created_at)) for k, v in data.iteritems())
-
-        # No need to worry about resolving schema here, since Entity._update
-        # will handle it.
+            memo[id(data)] = new = type(data)() # Setup recursion block.
+            new.update((k, self.merge(v, over, created_at)) for k, v in data.iteritems())
+            return new
 
         # If it already exists, then merge this into the old one.
         new = Entity(data['type'], data['id'], self)
         key = new.cache_key
         if key in self._cache:
             entity = self._cache[key]
-            entity._update(entity, data, over, created_at)
+            memo[id(entity)] = entity # Setup recursion block.
+            #print 'Session.merge; old', depth, new
+            entity._update(entity, data, over, created_at, depth + 1, memo)
             return entity
         
+        #print 'Session.merge; new', depth, new
+        memo[id(data)] = new # Setup recursion block.
+
         # Return the new one.
         self._cache[key] = new
-        new._update(new, data, over, created_at)
+        new._update(new, data, over, created_at, depth + 1, memo)
         return new
     
     def _submit_concurrent(self, func, *args, **kwargs):
@@ -251,7 +285,7 @@ class Session(object):
             data = self.schema.resolve_structure(data, type_)
             return_fields = self.schema.resolve_field(type_, return_fields) if return_fields else []
         return_fields = self._add_default_fields(type_, return_fields)
-        return self.merge(self.shotgun.create(type_, data, return_fields), resolve=False)
+        return self.merge(self.shotgun.create(type_, data, return_fields))
 
     @asyncable
     def update(self, type_, id, data):
@@ -266,7 +300,7 @@ class Session(object):
         if self.schema:
             type_ = self.schema.resolve_one_entity(type_)
             data = self.schema.resolve_structure(data, type_)
-        return self.merge(self.shotgun.update(type_, id, data), over=True, resolve=False)
+        return self.merge(self.shotgun.update(type_, id, data), over=True)
 
     @asyncable
     def batch(self, requests):
@@ -278,7 +312,7 @@ class Session(object):
         requests = self._minimize_entities(requests)
         if self.schema:
             requests = self.schema.resolve_structure(requests)
-        return [self.merge(x, over=True, resolve=False) if isinstance(x, dict) else x for x in self.shotgun.batch(requests)]
+        return [self.merge(x, over=True) if isinstance(x, dict) else x for x in self.shotgun.batch(requests)]
     
     def _add_default_fields(self, type_, fields):
         
@@ -372,7 +406,7 @@ class Session(object):
 
         result = self.shotgun.find(type_, filters, fields, *args, **kwargs)
 
-        return [self.merge(x, over=True, resolve=False) for x in result] if merge else result
+        return [self.merge(x, over=True) for x in result] if merge else result
     
     @asyncable
     def find_one(self, entity_type, filters, fields=None, order=None, 

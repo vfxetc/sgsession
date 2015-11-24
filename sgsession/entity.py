@@ -257,11 +257,11 @@ class Entity(dict):
         for x in itertools.chain(args, [kwargs]):
             self._update(self, x)
     
-    def _update(self, dst, src, over=None, created_at=None):
+    def _update(self, dst, src, over=None, created_at=None, depth=0, memo=None):
         
         created_at = parse_isotime(created_at)
 
-        src = dict(src)
+        src = dict(src) # We will mutate it.
 
         # There is no need to resolve everything at large, since __setitem__
         # will handle it for us.
@@ -318,7 +318,7 @@ class Entity(dict):
             
             # If it is an entity, then it will get automatically pulled into
             # place.
-            v = self.session.merge(v, over, created_at)
+            v = self.session.merge(v, over, created_at, depth + 1, memo)
             
             if do_override or k not in dst:
                 
