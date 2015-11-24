@@ -691,43 +691,51 @@ class Session(object):
     
         """
         with self._guessed_user_lock:
-            
-            if not hasattr(self, '_guessed_user'):
-                
-                # Pull it out of the environment.
-                id_ = os.environ.get('SHOTGUN_USER_ID')
-                if id_:
-                    user = self.merge({'type': 'HumanUser', 'id': int(id_)})
-                    Session._guessed_user = user.as_dict()
-            
-            if not hasattr(self, '_guessed_user'):
-                
-                if not fetch:
-                    return
-                
-                try:
-                    login = os.getlogin()
-                except OSError as e:
-                    # this fails on the farm, so fall back onto the envvar
-                    if e.errno != errno.ENOTTY:
-                        raise
-                    login = os.environ.get('USER')
 
-                filter_ = tuple(x.format(login=login) for x in filter)
-                user = self.find_one('HumanUser', [filter_], fields)
-                if user is not None:
-                    Session._guessed_user = user.as_dict()
-            
-            user = getattr(self, '_guessed_user', None)
-            if user is None:
+            try:
+                user = self._guessed_user
+            except AttributeError:
+                user = self._guess_user(filter, fields, fetch)
+                if user:
+                    Session._guessed_user = self.merge(user).as_dict()
+                else:
+                    Session._guessed_user = None
+
+            if not user:
                 return
-            
             entity = self.merge(user)
             if fields:
-                entity.fetch(fields) # Not forced!
-            
+                entity.fetch(fields)
             return entity
-        
 
-    
+
+    def _guess_user(self, filter, fields, fetch):
+
+        # This envvar is used only for this purpose (at Western Post)
+        id_ = os.environ.get('SHOTGUN_USER_ID')
+        if id_:
+            return {'type': 'HumanUser', 'id': int(id_)}
+
+        if not fetch:
+            return
+
+        # This envvar is more general, and respected by shotgun_api3_registry.
+        login = os.environ.get('SHOTGUN_SUDO_AS_LOGIN')
+        if login:
+            return self.find_one('HumanUser', [
+                ('login', 'is', login),
+            ], fields or ())
+
+        # Finally, search for a user based on the current login.
+        try:
+            login = os.getlogin()
+        except OSError as e:
+            # this fails on the farm, so fall back onto the envvar
+            if e.errno != errno.ENOTTY:
+                raise
+            login = os.environ.get('USER')
+
+        filter_ = tuple(x.format(login=login) for x in filter)
+        return self.find_one('HumanUser', [filter_], fields)
+
 
