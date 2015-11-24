@@ -214,9 +214,8 @@ class Session(object):
         if not ('type' in data and 'id' in data):
             return dict((k, self.merge(v, over, created_at)) for k, v in data.iteritems())
 
-        # If we have schema, resolve all the fields.
-        if resolve and self.schema:
-            data = self.schema.resolve_structure(data)
+        # No need to worry about resolving schema here, since Entity._update
+        # will handle it.
 
         # If it already exists, then merge this into the old one.
         new = Entity(data['type'], data['id'], self)

@@ -257,15 +257,14 @@ class Entity(dict):
         for x in itertools.chain(args, [kwargs]):
             self._update(self, x)
     
-    def _update(self, dst, src, over=None, created_at=None, depth=0):
-        # print ">>> MERGE", depth, dst, '<-', src
+    def _update(self, dst, src, over=None, created_at=None):
         
         created_at = parse_isotime(created_at)
 
         src = dict(src)
 
-        if self.session.schema:
-            self.session.schema.resolve_structure(src, self['type'])
+        # There is no need to resolve everything at large, since __setitem__
+        # will handle it for us.
 
         # Convert datetimes to UTC
         for k, v in src.iteritems():
@@ -330,9 +329,6 @@ class Entity(dict):
                     backrefs = v.backrefs.setdefault((dst['type'], k), [])
                     if dst not in backrefs:
                         backrefs.append(dst)
-        
-        # print "<<< MERGE", depth, dst
-        
     
     def copy(self):
         raise RuntimeError("cannot copy %s" % self.__class__.__name__)
