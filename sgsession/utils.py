@@ -18,22 +18,27 @@ def expand_braces(pattern):
     return res
 
 
+# We don't need to be so precise about the ranges of minutes/seconds, etc.,
+# because datetime deals with it.
 _isotime_re = re.compile(r'''
     ^
     (\d{4}) # year
     \D?
-    (0[1-9]|1[0-2]) # month: 01 to 12
+    (\d{2}) # month: 01 to 12
     \D?
-    (0[1-9]|[12]\d|3[01]) # day
+    (\d{2}) # day
     \D? # a "T" or space
-    (0[1-9]|1[0-2]) # hour
+    (\d{2}) # hours
     \D?
-    (0[1-9]|[1-5]\d) # minute
+    (\d{2}) # minutes
     \D?
-    (0[1-9]|[1-5]\d|6[01]) # second (with leap, FFS)
+    (\d{2}) # seconds
     (?:\.(\d{1,6}))? # microsecond
     \D? # a "Z" or space
-    (?:\d{3})? # timezone (which is ignored)
+    (?:
+        \d{4} | # offset
+        \D{3,}  # named
+    )? # ignored
     $
 ''', re.VERBOSE)
 
@@ -64,7 +69,7 @@ def expect_datetime(timestamp, log_message=None, entity=None, **log_context):
 def parse_isotime(timestamp):
     m = _isotime_re.match(timestamp)
     if m:
-        return datetime(*(x or 0 for x in m.groups()))
+        return datetime(*(int(x or 0) for x in m.groups()))
     else:
         raise ValueError('cannot parse timestamp', timestamp)
 
