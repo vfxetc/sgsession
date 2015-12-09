@@ -4,7 +4,7 @@ import itertools
 import re
 import sys
 
-from .utils import parse_isotime
+from .utils import expect_datetime, parse_isotime
 
 
 def asyncable(func):
@@ -259,11 +259,11 @@ class Entity(dict):
     
     def _update(self, dst, src, over=None, created_at=None, depth=0, memo=None):
         
-        created_at = parse_isotime(created_at)
+        created_at = expect_datetime(created_at, 'given to Entity.update at depth {depth}', depth=depth)
 
-        src = dict(src) # We will mutate it.
+        src = dict(src) # We will mutate it, so copy.
 
-        # There is no need to resolve everything at large, since __setitem__
+        # There is no need to resolve the schema at large, since __setitem__
         # will handle it for us.
 
         # Convert datetimes to UTC
@@ -306,8 +306,8 @@ class Entity(dict):
             do_override = True
         elif over is None:
             if 'updated_at' in dst and ('updated_at' in src or created_at):
-                dst_updated_at = parse_isotime(dst['updated_at'])
-                src_updated_at = parse_isotime(src.get('updated_at', created_at))
+                dst_updated_at = expect_datetime(dst['updated_at'], 'in Entity.merge dst', entity=dst)
+                src_updated_at = expect_datetime(src.get('updated_at', created_at), 'in Entity.merge src', entity=src)
                 do_override = src_updated_at > dst_updated_at
             else:
                 do_override = True

@@ -14,6 +14,7 @@ from __future__ import with_statement, absolute_import
 import errno
 import functools
 import itertools
+import logging
 import os
 import threading
 import warnings
@@ -22,7 +23,11 @@ from sgschema import Schema
 
 from .entity import Entity
 from .pool import ShotgunPool
-from .utils import expand_braces
+from .utils import expand_braces, parse_isotime
+
+
+
+log = logging.getLogger(__name__)
 
 
 class EntityNotFoundWarning(UserWarning):
@@ -199,7 +204,15 @@ class Session(object):
             merged data in it.
         
         """
-        
+
+        # Track down where we are getting string created_at from.
+        if created_at and isinstance(created_at, basestring):
+            # This can be a huge message...
+            log.error('string created_at (%r) given to Session.merge at depth %d; data to merge: %r' % (
+                created_at, _depth, data,
+            ))
+            created_at = parse_isotime(created_at)
+
         # Since we are dealing with recursive structures, we need to memoize
         # the outputs by all of the inputs as we create them.
         if _memo is None:
