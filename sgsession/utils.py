@@ -63,10 +63,16 @@ def expect_datetime(timestamp, log_message=None, entity=None, **log_context):
     
     log.error(msg)
 
-    return parse_isotime(timestamp)
+    return _parse_isotime(timestamp)
 
 
 def parse_isotime(timestamp):
+    if not isinstance(timestamp, basestring):
+        return timestamp
+    return _parse_isotime(timestamp)
+
+
+def _parse_isotime(timestamp):
     m = _isotime_re.match(timestamp)
     if m:
         return datetime(*(int(x or 0) for x in m.groups()))

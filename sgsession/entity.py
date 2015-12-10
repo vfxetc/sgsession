@@ -247,6 +247,14 @@ class Entity(dict):
     
     def __setitem__(self, key, value):
         key = self._resolve_key(key)
+
+        # Try to assert these are datetime.
+        if key in ('updated_at', 'created_at'):
+            try:
+                value = parse_isotime(value)
+            except ValueError as e:
+                log.exception('%s is not a timestamp' % key)
+
         dict.__setitem__(self, key, self.session.merge(value))
     
     def setdefault(self, key, value):
@@ -306,8 +314,11 @@ class Entity(dict):
             do_override = True
         elif over is None:
             if 'updated_at' in dst and ('updated_at' in src or created_at):
-                dst_updated_at = expect_datetime(dst['updated_at'], 'in Entity.merge dst', entity=dst)
-                src_updated_at = expect_datetime(src.get('updated_at', created_at), 'in Entity.merge src', entity=src)
+                # Sometimes (due to an old bug in the sgcache), updated_at
+                # and created_at would be strings. Even though we try to
+                # coerce them all in __set__, sometimes they get through.
+                dst_updated_at = parse_isotime(dst['updated_at'])
+                src_updated_at = parse_isotime(src.get('updated_at', created_at))
                 do_override = src_updated_at > dst_updated_at
             else:
                 do_override = True
