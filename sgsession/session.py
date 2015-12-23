@@ -282,13 +282,6 @@ class Session(object):
     
     def parse_user_input(self, spec, entity_types=None, fetch_project_from_page=False):
 
-        # We used to accept multiple parameters, but now we just take one.
-        if not isinstance(spec, basestring):
-            if len(spec) == 1:
-                spec = spec[0]
-            else:
-                raise TypeError('spec must be string or single-item list', spec)
-
         spec = spec.strip()
 
         # JSON.
