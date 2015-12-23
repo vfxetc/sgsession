@@ -14,9 +14,12 @@ from __future__ import with_statement, absolute_import
 import errno
 import functools
 import itertools
+import json
 import logging
 import os
+import re
 import threading
+import urlparse
 import warnings
 
 from sgschema import Schema
@@ -277,6 +280,73 @@ class Session(object):
         new._update(new, data, over, created_at, depth + 1, memo)
         return new
     
+    def parse_user_input(self, spec, entity_types=None, fetch_project_from_page=False):
+
+        # We used to accept multiple parameters, but now we just take one.
+        if not isinstance(spec, basestring):
+            if len(spec) == 1:
+                spec = spec[0]
+            else:
+                raise TypeError('spec must be string or single-item list', spec)
+
+        spec = spec.strip()
+
+        # JSON.
+        if spec.startswith('{') and spec.endswith('}'):
+            raw = json.loads(spec)
+            if 'type' not in raw or 'id' not in raw:
+                raise ValueError('incomplete JSON entity', spec)
+            if not isinstance(raw['type'], basestring) or not isinstance(raw['id'], int):
+                raise ValueError('malformed JSON entity', spec)
+            return self.merge(raw)
+
+        # Accept integer IDs if we know we want a specific type.
+        if spec.isdigit():
+            if isinstance(entity_types, basestring):
+                entity_types = [entity_types]
+            if entity_types and len(entity_types) == 1:
+                return self.merge({'type': entity_types[0], 'id': int(spec)})
+            else:
+                raise ValueError('int-only spec without single entity_types', spec, entity_types)
+            
+        # Shotgun detail URL.
+        m = re.match(r'^https?://\w+\.shotgunstudio\.com/detail/([A-Za-z]+)/(\d+)', spec)
+        if m:
+            return self.merge({'type': m.group(1), 'id': int(m.group(2))})
+
+        # Shotgun project overview URL.
+        m = re.match(r'^https?://\w+\.shotgunstudio\.com/page/\d+#([A-Z][A-Za-z]+)_(\d+)_', spec)
+        if m:
+            return self.merge({'type': m.group(1), 'id': int(m.group(2))})
+        
+        # Shotgun page URL.
+        m = re.match(r'^https?://\w+\.shotgunstudio\.com/page/(\d+)$', spec)
+        if m:
+            if not fetch_project_from_page:
+                raise ValueError('page URL without fetch_project_from_page', spec)
+            page = self.get('Page', int(m.group(1)), ['project'])
+            if not page:
+                raise ValueError('Page entity not found for page URL', spec)
+            if page.get('project'):
+                return self.merge(page['project'])
+            raise ValueError('page URL has no project', spec)
+            
+        # Direct entities. E.g. `shot:12345?code=whatever`
+        m = re.match(r'^([A-Za-z]{3,})[:_ -](\d+)(?:_|$|\?(\S*))', spec)
+        if m:
+            type_, id_, query = m.groups()
+            raw = {
+                'type': type_[0].upper() + type_[1:],
+                'id': int(id_),
+            }
+            if query:
+                for k, v in urlparse.parse_qsl(query, keep_blank_values=True):
+                    raw.setdefault(k, v)
+            return self.merge(raw)
+        
+        raise ValueError('could not parse entity spec', spec)
+
+
     def _submit_concurrent(self, func, *args, **kwargs):
         if not self._thread_pool:
             from concurrent.futures import ThreadPoolExecutor
