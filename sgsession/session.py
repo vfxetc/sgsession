@@ -364,7 +364,7 @@ class Session(object):
         return self.merge(self.shotgun.create(type_, data, return_fields))
 
     @asyncable
-    def update(self, type_, id, data):
+    def update(self, *args, **kwargs):
         """Update the given entity with the given fields.
         
         .. todo:: Add this to the Entity.
@@ -372,11 +372,64 @@ class Session(object):
         `See the Shotgun docs for more. <https://github.com/shotgunsoftware/python-api/wiki/Reference%3A-Methods#wiki-update>`_
         
         """
+
+        # Grab the "type" or 1st argument.
+        if not (args or kwargs):
+            raise TypeError('no arguments')
+        type_ = kwargs.pop('type', None)
+        if type_ is None:
+            if not args:
+                raise TypeError('must provide "type" kwarg or positional type argument')
+            type_ = args[0]
+            args = args[1:]
+
+        # Figure out if we were given an Entity, or an entity type (string)
+        if isinstance(type_, Entity):
+            ids = [type_['id']]
+            type_ = type_['type']
+            do_batch = False
+        elif isinstance(type_, basestring):
+            ids = kwargs.pop('id', None) or args[0]
+            args = args[1:]
+            do_batch = not isinstance(ids, int)
+            ids = list(ids) if do_batch else [ids]
+        elif isinstance(type_, (list, type)):
+            do_batch = True
+            entities = list(type_)
+            if not entities:
+                raise ValueError('entity sequence is empty')
+            sentinel = object()
+            non_entity = next((e for e in entities if not isinstance(e, Entity)), sentinel)
+            if non_entity is not sentinel:
+                raise ValueError('entity sequence contains non-Entity', non_entity)
+            type_ = entities[0]['type']
+            mismatched = next((e for e in entities if e['type'] != type_), None)
+            if mismatched is not None:
+                raise ValueError('mismatched entity types', type_, mismatched['type'])
+            ids = [e['id'] for e in entities]
+        else:
+            raise TypeError('first argument must be an Entity, list of entities, or string (entity type)', entity_or_type)
+
+        data = {}
+        for arg in args:
+            data.update(arg)
+        data.update(kwargs)
+        if not data:
+            raise ValueError('no data provided')
         data = self._minimize_entities(data)
         if self.schema:
             type_ = self.schema.resolve_one_entity(type_)
             data = self.schema.resolve_structure(data, type_)
-        return self.merge(self.shotgun.update(type_, id, data), over=True)
+
+        if do_batch:
+            return self.batch([{
+                'request_type': 'update',
+                'entity_type': type_,
+                'entity_id': id_,
+                'data': data,
+            } for id_ in ids])
+        else:
+            return self.merge(self.shotgun.update(type_, ids[0], data), over=True)
 
     @asyncable
     def batch(self, requests):
