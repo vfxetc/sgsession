@@ -108,12 +108,19 @@ class Entity(dict):
     
     @property
     def name(self):
-        # TODO: Use sgschema to find identifier column.
-        return self.get('name') or self.get('code') or self.get('content')
+        return self.get('$shotgun:name') or self.get('name') or self.get('code') or self.get('content')
     
+    def _repr_type(self):
+        type_ = self.get('type')
+        if type_ and type_.startswith('Custom'):
+            schema = self.session.schema
+            if schema:
+                return schema.repr_entity(type_)
+        return type_
+
     def __repr__(self):
         name = self.name
-        return '<Entity %s:%s%s at 0x%x>' % (self.get('type'), self.get('id'), ' %r' % name if name else '', id(self))
+        return '<Entity %s:%s%s at 0x%x>' % (self._repr_type(), self.get('id'), ' %r' % name if name else '', id(self))
     
     def __hash__(self):
         type_ = dict.get(self, 'type')
@@ -136,7 +143,7 @@ class Entity(dict):
         return ''.join(self._pprint(backrefs, depth, set()))
 
     def _pprint(self, backrefs, depth, visited):
-        yield '%s:%s at 0x%x; ' % (self.get('type'), self.get('id'), id(self))
+        yield '%s:%s at 0x%x; ' % (self._repr_type(), self.get('id'), id(self))
         
         # Did you know that bools are ints?
         if isinstance(backrefs, bool):
