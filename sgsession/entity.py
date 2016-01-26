@@ -51,6 +51,18 @@ class Entity(dict):
         else:
             return ('Detached-Unknown', id(self))
     
+    def minimize(self, keys=(), strict=False):
+        ret = self.minimal
+        for key in keys:
+            if self.session.schema:
+                key = self._resolve_key(key)
+            try:
+                ret[key] = dict.__getitem__(self, key)
+            except KeyError:
+                if strict:
+                    raise
+        return ret
+    
     @property
     def minimal(self):
         """The minimal representation of this entity; a :class:`dict` with type and id."""
