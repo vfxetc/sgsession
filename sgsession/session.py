@@ -347,7 +347,7 @@ class Session(object):
         return self._thread_pool.submit(func, *args, **kwargs)
 
     @asyncable
-    def create(self, type_, data, return_fields=None):
+    def create(self, type, data=None, return_fields=None, **kwargs):
         """Create an entity of the given type and data.
         
         :return: The new :class:`~sgsession.entity.Entity`.
@@ -355,13 +355,16 @@ class Session(object):
         `See the Shotgun docs for more. <https://github.com/shotgunsoftware/python-api/wiki/Reference%3A-Methods#wiki-create>`_
         
         """
-        data = self._minimize_entities(data)
+        if data is not None and kwargs:
+            # This isn't quite ideal, but it doesn't let must confusing get through.
+            raise TypeError('provide only one of data or **kwargs')
+        data = self._minimize_entities(data if data is not None else kwargs)
         if self.schema:
-            type_ = self.schema.resolve_one_entity(type_)
-            data = self.schema.resolve_structure(data, type_)
-            return_fields = self.schema.resolve_field(type_, return_fields) if return_fields else []
-        return_fields = self._add_default_fields(type_, return_fields)
-        return self.merge(self.shotgun.create(type_, data, return_fields))
+            type = self.schema.resolve_one_entity(type)
+            data = self.schema.resolve_structure(data, type)
+            return_fields = self.schema.resolve_field(type, return_fields) if return_fields else []
+        return_fields = self._add_default_fields(type, return_fields)
+        return self.merge(self.shotgun.create(type, data, return_fields))
 
     @asyncable
     def update(self, *args, **kwargs):
