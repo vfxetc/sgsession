@@ -40,13 +40,28 @@ class EntityNotFoundError(ValueError):
     pass
 
 
-def asyncable(func):
+def _asyncable(func):
+    """Wrap a function, so that async=True will run it in a thread."""
     @functools.wraps(func)
     def _wrapped(self, *args, **kwargs):
         if kwargs.pop('async', False):
             return self._submit_concurrent(func, self, *args, **kwargs)
         else:
             return func(self, *args, **kwargs)
+    return _wrapped
+
+def _assert_ownership(func):
+    """Wrap a function that takes a list of entities, and make sure that we own them."""
+    @functools.wraps(func)
+    def _wrapped(self, entities, *args, **kwargs):
+        entities = list(entities)
+        for e in entities:
+            if isinstance(e, Entity):
+                if e.session is not self:
+                    raise ValueError('Entity not from this session', e, self)
+            else:
+                raise TypeError('Non-Entity passed as entity', e)
+        return func(self, entities, *args, **kwargs)
     return _wrapped
 
 
@@ -329,14 +344,13 @@ class Session(object):
         
         raise ValueError('could not parse entity spec', spec)
 
-
     def _submit_concurrent(self, func, *args, **kwargs):
         if not self._thread_pool:
             from concurrent.futures import ThreadPoolExecutor
             self._thread_pool = ThreadPoolExecutor(8)
         return self._thread_pool.submit(func, *args, **kwargs)
 
-    @asyncable
+    @_asyncable
     def create(self, type, data=None, return_fields=None, **kwargs):
         """Create an entity of the given type and data.
         
@@ -356,7 +370,7 @@ class Session(object):
         return_fields = self._add_default_fields(type, return_fields)
         return self.merge(self.shotgun.create(type, data, return_fields))
 
-    @asyncable
+    @_asyncable
     def update(self, *args, **kwargs):
         """Update the given entity with the given fields.
         
@@ -424,7 +438,7 @@ class Session(object):
         else:
             return self.merge(self.shotgun.update(type_, ids[0], data), over=True)
 
-    @asyncable
+    @_asyncable
     def batch(self, requests):
         """Perform a series of requests in a transaction.
         
@@ -489,7 +503,7 @@ class Session(object):
 
         return data
     
-    @asyncable
+    @_asyncable
     def find(self, type_, filters, fields=None, *args, **kwargs):
         """Find entities.
         
@@ -530,7 +544,7 @@ class Session(object):
 
         return [self.merge(x, over=True) for x in result] if merge else result
     
-    @asyncable
+    @_asyncable
     def find_one(self, entity_type, filters, fields=None, order=None,
         filter_operator=None, retired_only=False, **kwargs):
         """Find one entity.
@@ -594,7 +608,7 @@ class Session(object):
 
 
 
-    @asyncable
+    @_asyncable
     def delete(self, entity, entity_id=None):
         """Delete one entity.
         
@@ -617,7 +631,7 @@ class Session(object):
 
         return res
         
-    @asyncable
+    @_asyncable
     def get(self, type_, id_, fields=None, fetch=True):
         """Get one entity by type and ID.
         
@@ -670,7 +684,8 @@ class Session(object):
             if missing:
                 raise EntityNotFoundError('%s %s not found' % (type_, ', '.join(map(str, sorted(missing)))))
 
-    @asyncable
+    @_assert_ownership
+    @_asyncable
     def filter_exists(self, entities, check=True, force=False):
         """Return the subset of given entities which exist (non-retired).
 
@@ -698,7 +713,8 @@ class Session(object):
 
         return set(e for e in entities if (e._exists or e._exists is None))
 
-    @asyncable
+    @_assert_ownership
+    @_asyncable
     def fetch(self, to_fetch, fields, force=False):
         """Fetch the named fields on the given entities.
         
@@ -719,8 +735,9 @@ class Session(object):
             by_type.setdefault(x['type'], set()).add(x)
         for type_, entities in by_type.iteritems():
             self._fetch(entities, fields, force=force)
-
-    @asyncable
+    
+    @_assert_ownership
+    @_asyncable
     def fetch_backrefs(self, to_fetch, backref_type, field):
         """Fetch requested backrefs on the given entities.
         
@@ -740,7 +757,8 @@ class Session(object):
         for type_, entities in by_type.iteritems():
             self.find(backref_type, [[field, 'is'] + [x.minimal for x in entities]])
 
-    @asyncable
+    @_assert_ownership
+    @_asyncable
     def fetch_core(self, to_fetch):
         """Assert all "important" fields exist, and fetch them if they do not.
         
@@ -759,8 +777,9 @@ class Session(object):
                 self.important_fields.get(type_) or (),
                 self.important_links.get(type_, {}).iterkeys(),
             ))
-        
-    @asyncable
+            
+    @_assert_ownership
+    @_asyncable
     def fetch_heirarchy(self, to_fetch):
         """Populate the parents as far up as we can go, and return all involved.
         
@@ -835,7 +854,7 @@ class Session(object):
     
     _guessed_user_lock = threading.Lock()
     
-    @asyncable
+    @_asyncable
     def guess_user(self, filter=('email', 'starts_with', '{login}@'), fields=(), fetch=True):
         """Guess Shotgun user from current login name.
         
