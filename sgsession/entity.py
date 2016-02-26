@@ -160,7 +160,7 @@ class Entity(dict):
             yield '{}\n'
             return
         
-        yield '{\n' 
+        yield '{\n'
         depth += 1
         for k, v in sorted(self.iteritems()):
             if k in ('id', 'type'):
@@ -282,24 +282,24 @@ class Entity(dict):
     
     def update(self, *args, **kwargs):
         for x in itertools.chain(args, [kwargs]):
-            self._update(self, x)
+            self._update(x)
     
-    def _update(self, dst, src, over=None, created_at=None, depth=0, memo=None):
+    def _update(self, data, over=None, created_at=None, depth=0, memo=None):
         
         created_at = expect_datetime(created_at, 'given to Entity.update at depth {depth}', depth=depth)
 
-        src = dict(src) # We will mutate it, so copy.
+        data = dict(data) # We will mutate it, so copy.
 
         # There is no need to resolve the schema at large, since __setitem__
         # will handle it for us.
 
         # Convert datetimes to UTC
-        for k, v in src.iteritems():
+        for k, v in data.iteritems():
             if isinstance(v, datetime) and v.tzinfo is not None:
-                src[k] = datetime(*v.utctimetuple()[:6])
+                data[k] = datetime(*v.utctimetuple()[:6])
         
         # Pre-process deep linked names.
-        for k, v in src.items():
+        for k, v in data.items():
             
             m = re.match(r'^(\w+)\.([A-Z]\w+)\.(.*)$', k)
             if m:
@@ -309,56 +309,56 @@ class Entity(dict):
 
                     # None IDs lead to None entities.
                     if deep_field == 'id':
-                        src[field] = None
+                        data[field] = None
                         continue
-                    # None non-IDs are ignored iff the ID field also 
+                    # None non-IDs are ignored iff the ID field also
                     # exists and is None.
                     else:
                         id_field = '%s.%s.id' % (field, type_)
-                        if id_field in src and not src[id_field]:
+                        if id_field in data and not data[id_field]:
                             continue
 
-                if isinstance(src.setdefault(field, {}), dict):
+                if isinstance(data.setdefault(field, {}), dict):
                     # Ignore type mismatches and None fields.
-                    if src[field].setdefault('type', type_) == type_ and v is not None:
-                        src[field][deep_field] = v
+                    if data[field].setdefault('type', type_) == type_ and v is not None:
+                        data[field][deep_field] = v
 
                 elif v is not None:
                     raise ValueError('Setting deep value on non-dict')
                 # XXX: Is this dangerous?
-                del src[k]
+                del data[k]
         
         # Determine if new values override old ones.
         if over:
             do_override = True
         elif over is None:
-            if 'updated_at' in dst and ('updated_at' in src or created_at):
+            if 'updated_at' in self and ('updated_at' in data or created_at):
                 # Sometimes (due to an old bug in the sgcache), updated_at
                 # and created_at would be strings. Even though we try to
                 # coerce them all in __set__, sometimes they get through.
-                dst_updated_at = parse_isotime(dst['updated_at'])
-                src_updated_at = parse_isotime(src.get('updated_at', created_at))
-                do_override = src_updated_at > dst_updated_at
+                self_updated_at = parse_isotime(self['updated_at'])
+                data_updated_at = parse_isotime(data.get('updated_at', created_at))
+                do_override = data_updated_at > self_updated_at
             else:
                 do_override = True
         else:
             do_override = False
         
-        for k, v in src.iteritems():
+        for k, v in data.iteritems():
             
             # If it is an entity, then it will get automatically pulled into
             # place.
             v = self.session.merge(v, over, created_at, depth + 1, memo)
             
-            if do_override or k not in dst:
+            if do_override or k not in self:
                 
-                dst[k] = v
+                self[k] = v
 
                 # Establish a backref.
                 if isinstance(v, Entity):
-                    backrefs = v.backrefs.setdefault((dst['type'], k), [])
-                    if dst not in backrefs:
-                        backrefs.append(dst)
+                    backrefs = v.backrefs.setdefault((self['type'], k), [])
+                    if self not in backrefs:
+                        backrefs.append(self)
     
     def copy(self):
         raise RuntimeError("cannot copy %s" % self.__class__.__name__)

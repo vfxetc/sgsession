@@ -267,7 +267,7 @@ class Session(object):
         key = new.cache_key
         entity = self._cache.setdefault(new.cache_key, new)
         memo[id(data)] = entity # Setup recursion block.
-        entity._update(entity, data, over, created_at, depth + 1, memo)
+        entity._update(data, over, created_at, depth + 1, memo)
         return entity
     
     def parse_user_input(self, spec, entity_types=None, fetch_project_from_page=False):
@@ -531,7 +531,7 @@ class Session(object):
         return [self.merge(x, over=True) for x in result] if merge else result
     
     @asyncable
-    def find_one(self, entity_type, filters, fields=None, order=None, 
+    def find_one(self, entity_type, filters, fields=None, order=None,
         filter_operator=None, retired_only=False, **kwargs):
         """Find one entity.
         
@@ -540,7 +540,7 @@ class Session(object):
         `See the Shotgun docs for more. <https://github.com/shotgunsoftware/python-api/wiki/Reference%3A-Methods#wiki-find_one>`_
         
         """
-        results = self.find(entity_type, filters, fields, order, 
+        results = self.find(entity_type, filters, fields, order,
             filter_operator, 1, retired_only, **kwargs)
         if results:
             return results[0]
