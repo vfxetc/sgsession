@@ -265,20 +265,10 @@ class Session(object):
         # If it already exists, then merge this into the old one.
         new = Entity(data['type'], data['id'], self)
         key = new.cache_key
-        if key in self._cache:
-            entity = self._cache[key]
-            memo[id(entity)] = entity # Setup recursion block.
-            #print 'Session.merge; old', depth, new
-            entity._update(entity, data, over, created_at, depth + 1, memo)
-            return entity
-        
-        #print 'Session.merge; new', depth, new
-        memo[id(data)] = new # Setup recursion block.
-
-        # Return the new one.
-        self._cache[key] = new
-        new._update(new, data, over, created_at, depth + 1, memo)
-        return new
+        entity = self._cache.setdefault(new.cache_key, new)
+        memo[id(data)] = entity # Setup recursion block.
+        entity._update(entity, data, over, created_at, depth + 1, memo)
+        return entity
     
     def parse_user_input(self, spec, entity_types=None, fetch_project_from_page=False):
 
