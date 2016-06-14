@@ -529,6 +529,7 @@ class Session(object):
 
         # Resolve names in fields.
         if self.schema:
+            filters = self.schema.resolve_structure(filters)
             fields = self.schema.resolve_field(type_, fields) if fields else []
 
         filters = self._minimize_entities(filters)
@@ -911,5 +912,3 @@ class Session(object):
 
         filter_ = tuple(x.format(login=login) for x in filter)
         return self.find_one('HumanUser', [filter_], fields)
-
-
