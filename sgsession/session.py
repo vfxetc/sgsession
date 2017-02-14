@@ -286,6 +286,32 @@ class Session(object):
         return entity
     
     def parse_user_input(self, spec, entity_types=None, fetch_project_from_page=False):
+        """Parse user input into an entity.
+
+        :param str spec: The string of input from the user.
+        :param tuple entity_types: Acceptable entity types. Effective against
+            paths.
+        :param bool fetch_project_from_page: Allow pulling projects from the
+            more abstract pages.
+        :return: :class:`.Entity` or ``None``.
+
+        Acceptable forms of input are:
+
+        - Type-ID tuples, e.g. ``Task:123``, or ``Task_123``; accepts arbitrary
+          URL-like fields, e.g. ``Task:123?code=Example``.
+        - JSON, e.g. ``{"type": "Task", "id", 123}``
+        - Bare IDs, e.g. ``123``; only if ``entity_types`` is provided.
+        - Shotgun URLs including the entity, e.g. ``https://example.shotgunstudio.com/detail/Task/123`` or
+          ``https://example.shotgunstudio.com/page/999#Task_123_Example``
+        - Shotgun pages without an entity, e.g. ``https://example.shotgunstudio.com/page/999``,
+          which describes ``Task 123``; only when ``fetch_project_from_page``.
+
+        Example::
+
+            >>> sg.parse_user_input('Task:123')
+            <Entity Task:123 at 0x110863618>
+
+        """
 
         spec = spec.strip()
 

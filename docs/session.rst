@@ -23,6 +23,12 @@ Fetching Fields
 .. automethod:: sgsession.session.Session.fetch_heirarchy
 
 
+Parsing User Input
+^^^^^^^^^^^^^^^^^^
+
+.. automethod:: sgsession.session.Session.parse_user_input
+
+
 Importance Controls
 ^^^^^^^^^^^^^^^^^^^
 
