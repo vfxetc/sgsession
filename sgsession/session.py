@@ -334,12 +334,12 @@ class Session(object):
                 raise ValueError('int-only spec without single entity_types', spec, entity_types)
             
         # Shotgun detail URL.
-        m = re.match(r'^https?://\w+\.shotgunstudio\.com/detail/([A-Za-z]+)/(\d+)', spec)
+        m = re.match(r'^https?://\w+\.shotgunstudio\.com/detail/([A-Za-z]+\d*)/(\d+)', spec)
         if m:
             return self.merge({'type': m.group(1), 'id': int(m.group(2))})
 
         # Shotgun project overview URL.
-        m = re.match(r'^https?://\w+\.shotgunstudio\.com/page/\d+#([A-Z][A-Za-z]+)_(\d+)_', spec)
+        m = re.match(r'^https?://\w+\.shotgunstudio\.com/page/\d+#([A-Z][A-Za-z]+\d*)_(\d+)_', spec)
         if m:
             return self.merge({'type': m.group(1), 'id': int(m.group(2))})
         
@@ -356,7 +356,7 @@ class Session(object):
             raise ValueError('page URL has no project', spec)
             
         # Direct entities. E.g. `shot:12345?code=whatever`
-        m = re.match(r'^([A-Za-z]{3,})[:_ -](\d+)(?:_|$|\?(\S*))', spec)
+        m = re.match(r'^([A-Za-z]{3,}\d*)[:_ -](\d+)(?:_|$|\?(\S*))', spec)
         if m:
             type_, id_, query = m.groups()
             raw = {
