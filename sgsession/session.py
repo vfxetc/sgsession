@@ -98,6 +98,13 @@ class Session(object):
         'Task': 'entity',
         'PublishEvent': 'sg_link',
         'Version': 'entity',
+
+        # Lofty Sky custom entities.
+        # Please complain loudly if they affects your studio, because I have
+        # a plan to do this better.
+        'CustomEntity21': 'sg_book',
+        'CustomEntity06': 'project',
+
     }
     
     #: Fields to always fetch for every entity.
@@ -114,6 +121,10 @@ class Session(object):
         'Step': ['code', 'short_name', 'entity_type'],
         'Task': ['step', 'content'],
         'Version': ['code', 'sg_task'],
+
+        # Lofty Sky custom entities.
+        'CustomEntity21': ['code'],
+        'CustomEntity06': ['code'],
     }
     
     #: Links to always fetch: maps entity type to a mapping of field names to
