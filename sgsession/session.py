@@ -26,7 +26,7 @@ from sgschema import Schema
 
 from .entity import Entity
 from .pool import ShotgunPool
-from .utils import expand_braces, parse_isotime
+from .utils import expand_braces, parse_isotime, shotgun_api3_connect
 
 
 
@@ -151,16 +151,14 @@ class Session(object):
         },
     }
     
-    def __init__(self, shotgun=None, schema=None, *args, **kwargs):
+    def __init__(self, shotgun=None, schema=None, **kwargs):
 
         # Lookup strings in the script registry.
         if isinstance(shotgun, basestring):
-            import shotgun_api3_registry
-            shotgun = shotgun_api3_registry.connect(shotgun, *args, **kwargs)
+            shotgun = shotgun_api3_connect(shotgun, **kwargs)
 
         # Wrap basic shotgun instances in our threader.
         self._shotgun = ShotgunPool.wrap(shotgun)
-        self._shotgun_args = None if shotgun else args
         self._shotgun_kwargs = None if shotgun else kwargs
 
         self._schema = schema
@@ -180,9 +178,8 @@ class Session(object):
         # Automatically generate Shotgun when we need one.
         # We use False to track that there should be nothing set here.
         if self._shotgun is None:
-            import shotgun_api3_registry
-            self._shotgun = ShotgunPool.wrap(shotgun_api3_registry.connect(
-                *self._shotgun_args, **self._shotgun_kwargs
+            self._shotgun = ShotgunPool.wrap(shotgun_api3_connect(
+                **self._shotgun_kwargs
             ))
         return self._shotgun or None
 
