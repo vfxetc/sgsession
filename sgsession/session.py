@@ -23,10 +23,11 @@ import urlparse
 import warnings
 
 from sgschema import Schema
+from dirmap import DirMap
 
 from .entity import Entity
 from .pool import ShotgunPool
-from .utils import expand_braces, parse_isotime, shotgun_api3_connect
+from .utils import expand_braces, parse_isotime, shotgun_api3_connect, cached_property
 
 
 
@@ -151,7 +152,7 @@ class Session(object):
         },
     }
     
-    def __init__(self, shotgun=None, schema=None, **kwargs):
+    def __init__(self, shotgun=None, schema=None, dir_map=None, **kwargs):
 
         # Lookup strings in the script registry.
         if isinstance(shotgun, basestring):
@@ -162,6 +163,7 @@ class Session(object):
         self._shotgun_kwargs = None if shotgun else kwargs
 
         self._schema = schema
+        self._dir_map = dir_map
 
         self._cache = {}
         self._thread_pool = None
@@ -200,6 +202,10 @@ class Session(object):
                 self._schema = False
 
         return self._schema or None
+
+    @cached_property
+    def dir_map(self):
+        return DirMap(self._dir_map or os.environ.get('SGSESSION_DIR_MAP'))
 
     def __getattr__(self, name):
         return getattr(self.shotgun, name)
@@ -276,6 +282,9 @@ class Session(object):
         if isinstance(data, tuple):
             return type(data)(self.merge(x, over, created_at, depth + 1, memo) for x in data)
         
+        if isinstance(data, basestring):
+            return self.dir_map(data)
+
         if not isinstance(data, dict):
             return data
         

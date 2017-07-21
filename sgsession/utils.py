@@ -1,10 +1,28 @@
 from datetime import datetime
-import re
+import functools
 import itertools
 import logging
 import pkg_resources
+import re
 
 log = logging.getLogger(__name__)
+
+
+class cached_property(object):
+    
+    def __init__(self, func):
+        functools.update_wrapper(self, func)
+        self.func = func
+    
+    def __get__(self, instance, owner_type=None):
+        if instance is None:
+            return self
+        try:
+            return instance.__dict__[self.__name__]
+        except KeyError:
+            value = self.func(instance)
+            instance.__dict__[self.__name__] = value
+            return value
 
 
 def expand_braces(pattern):
