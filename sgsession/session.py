@@ -105,6 +105,7 @@ class Session(object):
         # a plan to do this better.
         'CustomEntity21': 'sg_book',
         'CustomEntity06': 'project',
+        'CustomEntity04': 'sg_book',
 
     }
     
@@ -125,6 +126,7 @@ class Session(object):
 
         # Lofty Sky custom entities.
         'CustomEntity21': ['code'],
+        'CustomEntity04': ['code'],
         'CustomEntity06': ['code'],
     }
     
