@@ -103,9 +103,9 @@ class Session(object):
         # Lofty Sky custom entities.
         # Please complain loudly if they affects your studio, because I have
         # a plan to do this better.
-        'CustomEntity21': 'sg_book',
-        'CustomEntity06': 'project',
-        'CustomEntity04': 'sg_book',
+        'CustomEntity06': 'project', # $Book
+        'CustomEntity04': 'sg_book', # $BookIssue
+        'CustomEntity21': 'sg_issue', # $BookPage
 
     }
     
@@ -125,9 +125,9 @@ class Session(object):
         'Version': ['code', 'sg_task'],
 
         # Lofty Sky custom entities.
-        'CustomEntity21': ['code'],
-        'CustomEntity04': ['code'],
-        'CustomEntity06': ['code'],
+        'CustomEntity06': ['code'], # $Book
+        'CustomEntity04': ['code'], # $BookIssue
+        'CustomEntity21': ['code'], # $BookPage
     }
     
     #: Links to always fetch: maps entity type to a mapping of field names to
