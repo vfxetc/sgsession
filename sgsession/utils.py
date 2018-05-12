@@ -2,8 +2,10 @@ from datetime import datetime
 import functools
 import itertools
 import logging
-import pkg_resources
 import re
+
+import pkg_resources
+
 
 log = logging.getLogger(__name__)
 
@@ -39,13 +41,25 @@ def expand_braces(pattern):
 
 def shotgun_api3_connect(*args, **kwargs):
 
-    eps = list(pkg_resources.iter_entry_points('shotgun_api3_connect'))
-    eps.sort(key=lambda ep: ep.name)
-    for ep in eps:
+    eps = []
+    for ep in pkg_resources.iter_entry_points('shotgun_api3_connect'):
+        eps.append((ep, True))
+    for ep in pkg_resources.iter_entry_points('shotgun_api3_kwargs'):
+        eps.append((ep, False))
+    eps.sort(key=lambda (ep, _): ep.name)
+
+    for ep, is_direct in eps:
+
         func = ep.load()
         res = func(*args, **kwargs)
-        if res:
+        if not res:
+            continue
+
+        if is_direct:
             return res
+
+        import shotgun_api3
+        return shotgun_api3.Shotgun(**res)
 
     # Fall back onto the shotgun_api3_registry module.
     try:
@@ -55,7 +69,7 @@ def shotgun_api3_connect(*args, **kwargs):
     else:
         return m.connect(*args, **kwargs)
 
-    raise ValueError("No shotgun_api3_connect entry point or shotgun_api3_registry module found.")
+    raise ValueError("No shotgun_api3_connect/shotgun_api3_kwargs entry point or shotgun_api3_registry module found.")
 
 
 # We don't need to be so precise about the ranges of minutes/seconds, etc.,
