@@ -184,8 +184,8 @@ class Session(object):
         if self._shotgun is None:
             self._shotgun = ShotgunPool.wrap(shotgun_api3_connect(
                 **self._shotgun_kwargs
-            ))
-        return self._shotgun or None
+            )) or False
+        return self._shotgun
 
     @property
     def schema(self):
